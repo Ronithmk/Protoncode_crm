@@ -1,40 +1,195 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Manrope", sans-serif;
-  
-  --color-primary: #2547f4;
-  --color-background-light: #f5f6f8;
-  --color-background-dark: #101322;
+/* =========================================
+   THEME VARIABLES
+========================================= */
+
+:root {
+  --bg-base: #f6f8fc;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --border-color: #e5e7eb;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --primary-color: #2547f4;
+
+  --success-color: #16a34a;
+  --success-bg: rgba(22, 163, 74, 0.08);
+
+  --danger-color: #dc2626;
+  --danger-bg: rgba(220, 38, 38, 0.08);
+
+  --warning-color: #d97706;
+  --warning-bg: rgba(217, 119, 6, 0.08);
+
+  --hover-bg: rgba(37, 71, 244, 0.05);
 }
 
+.dark {
+  --bg-base: #0f1424;
+  --bg-surface: #11182b;
+  --bg-card: #141c31;
+  --border-color: #1e2a45;
+  --text-primary: #f1f5f9;
+  --text-secondary: #7a8db8;
+  --primary-color: #4f6bff;
+
+    --success-color: #22c55e;
+  --success-bg: rgba(34, 197, 94, 0.12);
+
+  --danger-color: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.12);
+
+  --warning-color: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.12);
+
+  --hover-bg: rgba(79, 107, 255, 0.1);
+}
+
+/* =========================================
+   BASE LAYER
+========================================= */
+
 @layer base {
+  html {
+    font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  }
+
   body {
-    @apply bg-background-dark text-slate-100 antialiased;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    transition: background-color 0.25s ease, color 0.25s ease;
+    -webkit-font-smoothing: antialiased;
   }
 }
 
+/* =========================================
+   COMPONENT UTILITIES
+========================================= */
+
 @layer components {
+
+  .bg-base {
+    background-color: var(--bg-base);
+  }
+
+  .bg-surface {
+    background-color: var(--bg-surface);
+  }
+
+  .bg-card {
+    background-color: var(--bg-card);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  .card-header {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .dark .bg-card {
+    box-shadow: none;
+  }
+
+  .border-theme {
+    border-color: var(--border-color);
+  }
+
+  .border-divider {
+    background-color: var(--border-color);
+  }
+  
+  .divide-theme > * + * {
+    border-top: 1px solid var(--border-color);
+  }
+
+  .text-primary {
+    color: var(--text-primary);
+  }
+
+  .text-secondary {
+    color: var(--text-secondary);
+  }
+
+  .text-theme {
+    color: var(--text-primary);
+  }
+
+  .text-muted {
+    color: var(--text-secondary);
+  }
+
+  .success-text {
+    color: var(--success-color);
+  }
+
+  .success-bg {
+    background-color: var(--success-bg);
+  }
+
+  .success-border {
+    border-color: var(--success-color);
+  }
+
+  .danger-text {
+    color: var(--danger-color);
+  }
+
+  .danger-bg {
+    background-color: var(--danger-bg);
+  }
+
+  .danger-border {
+    border-color: var(--danger-color);
+  }
+
+  .warning-text {
+    color: var(--warning-color);
+  }
+
+  .warning-bg {
+    background-color: var(--warning-bg);
+  }
+
+  .warning-border {
+    border-color: var(--warning-color);
+  }
+
+  .hover-theme:hover {
+    background-color: var(--hover-bg);
+  }
+
+  .glass-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    backdrop-filter: blur(12px);
+  }
+
+  /* Scrollbar */
+
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
+
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
+
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(37, 71, 244, 0.2);
+    background: var(--border-color);
     border-radius: 10px;
   }
+
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(37, 71, 244, 0.4);
+    background: var(--primary-color);
   }
 
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
