@@ -194,7 +194,7 @@ export const LoginPage = () => {
               </div>
               <div>
                 <p className="text-[16px] font-extrabold text-white tracking-tight">
-                  DOJO<span className="text-indigo-400">CRM</span>
+                  Proton<span className="text-indigo-400">CRM</span>
                 </p>
                 <p className="text-[10px] text-slate-500 tracking-widest uppercase">Martial Arts Management</p>
               </div>
