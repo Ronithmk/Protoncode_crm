@@ -3,17 +3,17 @@
 // ============================================================
 
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { MainLayout } from "../components/layout/MainLayout";
+import { MainLayout } from "../../app/layout/MainLayout";
 
 // Dashboard
-import { DashboardOverview } from "../features/dashboard/DashboardOverview";
+import { DashboardOverview } from "../../features/dashboard/DashboardOverview";
 
 // Leads
-import { LeadsList, LeadsPipeline } from "../features/leads/LeadsList";
-import { LeadDetail } from "../features/leads/LeadDetail";
+import { LeadsList, LeadsPipeline } from "../../features/leads/LeadsList";
+import { LeadDetail } from "../../features/leads/LeadDetail";
 
 // Schedule
-import { ScheduleCalendar, TrialsPage } from "../features/schedule/ScheduleCalendar";
+import { ScheduleCalendar, TrialsPage } from "../../features/schedule/ScheduleCalendar";
 
 // Reports
 import {
@@ -22,10 +22,10 @@ import {
   SalesReportsPage,
   TrialConversionPage,
   SourceAnalyticsPage,
-} from "../features/reports/ReportsPage";
+} from "../../features/reports/ReportsPage";
 
 // Users
-import { UsersListPage, RolesPage } from "../features/users/UsersPage";
+import { UsersListPage, RolesPage } from "../../features/users/UsersPage";
 
 // Settings
 import {
@@ -35,7 +35,7 @@ import {
   WhatsAppSettings,
   MetaAdsSettings,
   LeadStagesSettings,
-} from "../features/settings/SettingsPage";
+} from "../../features/settings/SettingsPage";
 
 // ─── PLACEHOLDER (for pages not yet built) ───────────────
 const Placeholder = ({ title }: { title: string }) => (

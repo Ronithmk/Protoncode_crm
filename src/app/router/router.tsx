@@ -6,36 +6,37 @@
 // ============================================================
 
 import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
-import { MainLayout } from "../components/layout/MainLayout";
-import { useRole } from "../store/useAuthStore";
+import { MainLayout } from "../../app/layout/MainLayout";
+import { useIsAuthenticated, useRole } from "../../store/useAuthStore";
 import {
-  MAIN_NAV,
   MODULE_SIDEBAR,
   filterByRole,
   getModuleFromPath,
-} from "../config/navigationConfig";
-import type { Role } from "../config/navigationConfig";
+} from "../../config/navigationConfig";
+import { LoginPage } from "../../features/auth/LoginPage";
+import { UnauthorizedPage } from "../../features/auth/UnauthorizedPage";
+import { AuthGuard } from "./AuthGuard";
+import { RoleGuard } from "./RoleGuard";
+import { DashboardOverview } from "../../features/dashboard/DashboardOverview";
+import { LeadsList, LeadsPipeline } from "../../features/leads/LeadsList";
+import { LeadDetail } from "../../features/leads/LeadDetail";
+import { ScheduleCalendar, TrialsPage } from "../../features/schedule/ScheduleCalendar";
+import { LeadReportsPage, ReportsPage, SalesReportsPage, SourceAnalyticsPage, TrialConversionPage } from "../../features/reports/ReportsPage";
+import { RolesPage, UsersListPage } from "../../features/users/UsersPage";
+import { GeneralSettings, IntegrationsSettings, LeadStagesSettings, MetaAdsSettings, SecuritySettings, WhatsAppSettings } from "../../features/settings/SettingsPage";
 
 // ─────────────────────────────────────────────
-// ROUTE GUARD — redirects if role lacks access
+// PROTECTED ROUTE WRAPPER
+// Checks authentication and role-based access before rendering the page.   
+// If not authenticated, redirects to /login.
+// If authenticated but unauthorized, redirects to /unauthorized.
 // ─────────────────────────────────────────────
-const ProtectedRoute = ({
-  children,
-  allowedRoles,
-}: {
-  children: React.ReactNode;
-  allowedRoles: Role[];
-}) => {
-  const role = useRole();
-  const location = useLocation();
+const RootRedirect = () => {
+  const isAuthenticated = useIsAuthenticated();
 
-  if (!allowedRoles.includes(role)) {
-    // Redirect to the first accessible route for this role
-    const firstNav = filterByRole(MAIN_NAV, role)[0];
-    return <Navigate to={firstNav?.path ?? "/dashboard"} replace />;
-  }
-
-  return <>{children}</>;
+  return (
+    <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
+  );
 };
 
 // ─────────────────────────────────────────────
@@ -115,35 +116,47 @@ export const router = createBrowserRouter([
   {
     // Root redirect
     path: "/",
-    element: <Navigate to="/dashboard" replace />,
+    element: <RootRedirect />,
+  },
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/unauthorized",
+    element: <UnauthorizedPage />,
   },
   {
     // All authenticated routes nest under MainLayout
-    element: <MainLayout />,
+    element: (
+      <AuthGuard>
+        <MainLayout />
+      </AuthGuard>
+    ),
     children: [
       // ── Dashboard ──────────────────────────────
       {
         path: "/dashboard",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN","RM","FM","TRAINING_MANAGER","HR"]}>
-            <PlaceholderPage title="Dashboard Overview" description="Your command center." />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM","FM","TRAINING_MANAGER","HR"]}>
+            <DashboardOverview />
+          </RoleGuard >
         ),
       },
       {
         path: "/dashboard/tasks",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN","RM","FM","TRAINING_MANAGER"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM","FM","TRAINING_MANAGER"]}>
             <PlaceholderPage title="My Tasks" description="Pending actions assigned to you." />
-          </ProtectedRoute>
+          </RoleGuard >
         ),
       },
       {
         path: "/dashboard/notifications",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN","RM","FM","TRAINING_MANAGER","HR"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM","FM","TRAINING_MANAGER","HR"]}>
             <PlaceholderPage title="Notifications" />
-          </ProtectedRoute>
+          </RoleGuard >
         ),
       },
 
@@ -151,41 +164,49 @@ export const router = createBrowserRouter([
       {
         path: "/leads",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN","RM"]}>
-            <PlaceholderPage title="All Leads" description="Full leads database." />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM"]}>
+           <LeadsList /> 
+          </RoleGuard >
+        ),
+      },
+      {
+        path: "/leads/:id",
+        element: (
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM"]}>
+           <LeadDetail /> 
+          </RoleGuard >
         ),
       },
       {
         path: "/leads/mine",
         element: (
-          <ProtectedRoute allowedRoles={["RM","SUPER_ADMIN"]}>
+          <RoleGuard  allowedRoles={["RM","SUPER_ADMIN"]}>
             <PlaceholderPage title="My Leads" description="Leads assigned to you." />
-          </ProtectedRoute>
+          </RoleGuard >
         ),
       },
       {
         path: "/leads/pipeline",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN","RM"]}>
-            <PlaceholderPage title="Pipeline" description="Kanban-style lifecycle view." />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM"]}>
+            <LeadsPipeline />
+          </RoleGuard >
         ),
       },
       {
         path: "/leads/sources",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN"]}>
             <PlaceholderPage title="Lead Sources" />
-          </ProtectedRoute>
+          </RoleGuard >
         ),
       },
       {
         path: "/leads/import",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN"]}>
             <PlaceholderPage title="Import Leads" />
-          </ProtectedRoute>
+          </RoleGuard >
         ),
       },
 
@@ -193,33 +214,33 @@ export const router = createBrowserRouter([
       {
         path: "/schedule",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN","RM","TRAINING_MANAGER"]}>
-            <PlaceholderPage title="Calendar" description="Schedule and appointments." />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM","TRAINING_MANAGER"]}>
+            <ScheduleCalendar />
+          </RoleGuard >
         ),
       },
       {
         path: "/schedule/trials",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN","RM","TRAINING_MANAGER"]}>
-            <PlaceholderPage title="Trials" />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM","TRAINING_MANAGER"]}>
+            <TrialsPage />
+          </RoleGuard >
         ),
       },
       {
         path: "/schedule/followups",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN","RM"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM"]}>
             <PlaceholderPage title="Follow-ups" />
-          </ProtectedRoute>
+          </RoleGuard >
         ),
       },
       {
         path: "/schedule/batches",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN","TRAINING_MANAGER"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","TRAINING_MANAGER"]}>
             <PlaceholderPage title="Batch Schedule" />
-          </ProtectedRoute>
+          </RoleGuard >
         ),
       },
 
@@ -227,67 +248,75 @@ export const router = createBrowserRouter([
       {
         path: "/renewals",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
             <PlaceholderPage title="Due Renewals" />
-          </ProtectedRoute>
+          </RoleGuard >
         ),
       },
       {
         path: "/renewals/completed",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
             <PlaceholderPage title="Renewed Members" />
-          </ProtectedRoute>
+          </RoleGuard >
         ),
       },
       {
         path: "/renewals/lapsed",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
             <PlaceholderPage title="Lapsed Members" />
-          </ProtectedRoute>
+          </RoleGuard >
         ),
       },
       {
         path: "/renewals/revenue",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","FM"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","FM"]}>
             <PlaceholderPage title="Revenue Summary" />
-          </ProtectedRoute>
+          </RoleGuard >
         ),
       },
 
       // ── Reports ────────────────────────────────
       {
+        path: "/reports",
+        element: (
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
+            <ReportsPage /> 
+          </RoleGuard >
+        ),
+      },
+      {
         path: "/reports/leads",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
-            <PlaceholderPage title="Lead Reports" />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
+            <LeadReportsPage /> 
+          </RoleGuard >
         ),
       },
       {
         path: "/reports/sales",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
-            <PlaceholderPage title="Sales Reports" />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
+            <SalesReportsPage />
+          </RoleGuard >
         ),
       },
       {
         path: "/reports/trials",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN","TRAINING_MANAGER"]}>
-            <PlaceholderPage title="Trial Conversion" />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","TRAINING_MANAGER"]}>
+            <TrialConversionPage />
+          </RoleGuard >
         ),
       },
       {
         path: "/reports/sources",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN"]}>
-            <PlaceholderPage title="Source Analytics" />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN"]}>
+            <SourceAnalyticsPage />
+          </RoleGuard >
         ),
       },
 
@@ -295,33 +324,33 @@ export const router = createBrowserRouter([
       {
         path: "/users",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
-            <PlaceholderPage title="All Users" />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN"]}>
+            <UsersListPage />
+          </RoleGuard >
         ),
       },
       {
         path: "/users/roles",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
-            <PlaceholderPage title="Roles & Permissions" />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN"]}>
+            <RolesPage />
+          </RoleGuard >
         ),
       },
       {
         path: "/users/invite",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN"]}>
             <PlaceholderPage title="Invite User" />
-          </ProtectedRoute>
+          </RoleGuard >
         ),
       },
       {
         path: "/users/activity",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN"]}>
             <PlaceholderPage title="Activity Log" />
-          </ProtectedRoute>
+          </RoleGuard >
         ),
       },
 
@@ -329,49 +358,49 @@ export const router = createBrowserRouter([
       {
         path: "/settings",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN"]}>
-            <PlaceholderPage title="General Settings" />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN"]}>
+            <GeneralSettings />
+          </RoleGuard >
         ),
       },
       {
         path: "/settings/security",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN"]}>
-            <PlaceholderPage title="Security" />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN"]}>
+            <SecuritySettings />
+          </RoleGuard >
         ),
       },
       {
         path: "/settings/integrations",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN"]}>
-            <PlaceholderPage title="Integrations" />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN"]}>
+            <IntegrationsSettings />
+          </RoleGuard >
         ),
       },
       {
         path: "/settings/whatsapp",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN"]}>
-            <PlaceholderPage title="WhatsApp Automation" />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN"]}>
+            <WhatsAppSettings />
+          </RoleGuard >
         ),
       },
       {
         path: "/settings/meta",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN","ADMIN"]}>
-            <PlaceholderPage title="Meta Ads Integration" />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN"]}>
+            <MetaAdsSettings />
+          </RoleGuard >
         ),
       },
       {
         path: "/settings/stages",
         element: (
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
-            <PlaceholderPage title="Lead Stage Configuration" />
-          </ProtectedRoute>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN"]}>
+            <LeadStagesSettings />
+          </RoleGuard >
         ),
       },
     ],

@@ -1,71 +1,88 @@
 // ============================================================
-// store/useAuthStore.ts
+// store/useAuthStore.ts  (UPDATED)
 // Zustand store for authentication and role state.
-// In production, hydrate this from your auth provider / JWT.
+//
+// Changes from v1:
+//  - isAuthenticated defaults to false (no auto-login)
+//  - user defaults to null (must go through login flow)
+//  - Added login() action that accepts a full User object
+//  - setRole() removed — role is now owned by the session
+//  - persist() only saves the session; clears on logout
 // ============================================================
 
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import type { Role } from "../config/navigationConfig";
 
-type User = {
+// ─── TYPES ───────────────────────────────────────────────
+export type User = {
   id: string;
   name: string;
   email: string;
   role: Role;
+  center: string;
   avatar?: string;
 };
 
 type AuthState = {
   user: User | null;
-  role: Role;
   isAuthenticated: boolean;
 
   // Actions
-  setUser: (user: User) => void;
-  setRole: (role: Role) => void;   // dev-only role switcher
+  login: (user: User) => void;
   logout: () => void;
 };
 
-const DEFAULT_USER: User = {
-  id: "usr_001",
-  name: "Admin User",
-  email: "admin@dojo.com",
-  role: "SUPER_ADMIN",
-};
-
+// ─── STORE ───────────────────────────────────────────────
 export const useAuthStore = create<AuthState>()(
   devtools(
     persist(
       (set) => ({
-        user: DEFAULT_USER,
-        role: DEFAULT_USER.role,
-        isAuthenticated: true,
+        // ── Initial state: not logged in ──────────────────
+        user: null,
+        isAuthenticated: false,
 
-        setUser: (user) =>
-          set({ user, role: user.role, isAuthenticated: true }),
+        // ── login: called after credentials are verified ──
+        login: (user) =>
+          set({ user, isAuthenticated: true }, false, "auth/login"),
 
-        setRole: (role) =>
-          set((state) => ({
-            role,
-            user: state.user ? { ...state.user, role } : null,
-          })),
-
+        // ── logout: wipes session ─────────────────────────
         logout: () =>
-          set({ user: null, role: "HR", isAuthenticated: false }),
+          set({ user: null, isAuthenticated: false }, false, "auth/logout"),
       }),
       {
-        name: "dojo-auth",
-        // Only persist role for dev convenience; remove in production
-        partialize: (state) => ({ role: state.role }),
+        name: "proton-auth-session",
+        // Persist the full session so a page refresh keeps the user logged in.
+        // Remove `partialize` entirely to persist everything, or scope it:
+        partialize: (state) => ({
+          user: state.user,
+          isAuthenticated: state.isAuthenticated,
+        }),
       }
     )
   )
 );
 
-// ─────────────────────────────────────────────
-// Selector hooks (prevents unnecessary re-renders)
-// ─────────────────────────────────────────────
-export const useRole = () => useAuthStore((s) => s.role);
-export const useUser = () => useAuthStore((s) => s.user);
-export const useSetRole = () => useAuthStore((s) => s.setRole);
+// ─── SELECTOR HOOKS ──────────────────────────────────────
+// Prefer these over accessing the store directly in components
+// to avoid unnecessary re-renders.
+
+/** The current user's role, or HR as a safe fallback. */
+export const useRole = () =>
+  useAuthStore((s) => s.user?.role);
+
+/** The full current user object (may be null if not logged in). */
+export const useUser = () =>
+  useAuthStore((s) => s.user);
+
+/** Whether the user is currently authenticated. */
+export const useIsAuthenticated = () =>
+  useAuthStore((s) => s.isAuthenticated);
+
+/** Login action — call with a User object after verifying credentials. */
+export const useLogin = () =>
+  useAuthStore((s) => s.login);
+
+/** Logout action — clears session and redirects to /login. */
+export const useLogout = () =>
+  useAuthStore((s) => s.logout);
