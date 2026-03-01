@@ -3,7 +3,7 @@
 // Full leads table with search, multi-filter, sort, pagination.
 // ============================================================
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../../utils/cn";
 import {
@@ -18,6 +18,129 @@ const LIFECYCLE_STAGES: LifecycleStage[] = [
   "Lead Created","Call Handling","Followup","Trial Booked",
   "Trial Done","Joined","Membership Active","Renewal",
 ];
+
+// ─── STAGE DOT COLOURS ───────────────────────────────────
+const STAGE_DOT: Record<LifecycleStage, string> = {
+  "Lead Created":      "bg-indigo-400",
+  "Call Handling":     "bg-amber-400",
+  "Followup":          "bg-amber-300",
+  "Trial Booked":      "bg-emerald-400",
+  "Trial Done":        "bg-emerald-300",
+  "Joined":            "bg-green-400",
+  "Membership Active": "bg-green-300",
+  "Renewal":           "bg-red-400",
+};
+
+// ─── INLINE STAGE PICKER ─────────────────────────────────
+// Wraps the existing StageBadge. Click to open a dropdown
+// and move the lead to a new stage directly from the table.
+const InlineStagePicker = ({
+  stage,
+  leadId,
+  canEdit,
+  onChange,
+}: {
+  stage: LifecycleStage;
+  leadId: string;
+  canEdit: boolean;
+  onChange: (id: string, stage: LifecycleStage) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const handleSelect = (newStage: LifecycleStage) => {
+    if (newStage === stage) { setOpen(false); return; }
+    setSaving(true);
+    // Swap the setTimeout for your real API mutation, e.g.:
+    // await api.leads.updateStage(leadId, newStage);
+    setTimeout(() => {
+      onChange(leadId, newStage);
+      setSaving(false);
+      setOpen(false);
+    }, 350);
+  };
+
+  // Non-editable roles: render the badge as-is, no interaction
+  if (!canEdit) return <StageBadge stage={stage} size="sm" />;
+
+  return (
+    <div ref={ref} className="relative inline-block" onClick={e => e.stopPropagation()}>
+      {/* Trigger */}
+      <button
+        onClick={() => setOpen(p => !p)}
+        title="Click to change stage"
+        className={cn(
+          "group flex items-center gap-1 rounded-full outline-none transition-all duration-150",
+          "focus-visible:ring-2 focus-visible:ring-indigo-500/40",
+          open && "ring-2 ring-indigo-500/30",
+        )}
+      >
+        <StageBadge stage={stage} size="sm" />
+        {/* Caret */}
+        <span className={cn(
+          "text-[9px] text-secondary group-hover:text-primary transition-colors -ml-0.5",
+          "inline-block transition-transform duration-150",
+          open && "rotate-180",
+        )}>
+          ▾
+        </span>
+        {/* Saving spinner */}
+        {saving && (
+          <span className="w-3 h-3 border border-indigo-400 border-t-transparent rounded-full animate-spin" />
+        )}
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute left-0 top-[calc(100%+5px)] z-40 w-[200px] bg-surface border border-theme rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.5)] py-1.5 overflow-hidden">
+          <p className="text-[10px] font-bold text-secondary uppercase tracking-widest px-3 pt-1 pb-2">
+            Move to stage
+          </p>
+          {LIFECYCLE_STAGES.map(s => {
+            const isActive = s === stage;
+            const isPast   = LIFECYCLE_STAGES.indexOf(s) < LIFECYCLE_STAGES.indexOf(stage);
+            return (
+              <button
+                key={s}
+                onClick={() => handleSelect(s)}
+                className={cn(
+                  "w-full flex items-center gap-2.5 px-3 py-2 text-[12px] transition-colors text-left",
+                  isActive
+                    ? "bg-indigo-500/10 text-primary font-semibold"
+                    : "text-secondary hover:bg-white/[0.04] hover:text-primary",
+                )}
+              >
+                <span className={cn(
+                  "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                  STAGE_DOT[s],
+                  !isActive && "opacity-50",
+                )} />
+                {s}
+                {isActive && (
+                  <span className="ml-auto text-[10px] text-indigo-400 font-bold">current</span>
+                )}
+                {isPast && !isActive && (
+                  <span className="ml-auto text-[9px] text-secondary">↩ revert</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ─── ADD LEAD MODAL ──────────────────────────────────────
 const AddLeadModal = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
@@ -54,7 +177,17 @@ const AddLeadModal = ({ open, onClose }: { open: boolean; onClose: () => void })
 export const LeadsList = () => {
   const navigate = useNavigate();
   const role = useRole();
-  const canAdd = ["SUPER_ADMIN","ADMIN","RM"].includes(role);
+  const canAdd  = ["SUPER_ADMIN","ADMIN","RM"].includes(role);
+  const canEdit = ["SUPER_ADMIN","ADMIN","RM"].includes(role);
+
+  // Local copy so inline stage edits reflect immediately in the table
+  const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS);
+
+  const handleStageChange = (id: string, newStage: LifecycleStage) => {
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, stage: newStage } : l));
+    // TODO: replace with your API mutation, e.g.:
+    // await api.leads.updateStage(id, newStage);
+  };
 
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState<string>("All");
@@ -66,18 +199,18 @@ export const LeadsList = () => {
 
   const PER_PAGE = 8;
 
-  const filtered = useMemo(() => MOCK_LEADS.filter(l => {
+  const filtered = useMemo(() => leads.filter(l => {
     const q = search.toLowerCase();
     const matchSearch = !q || l.name.toLowerCase().includes(q) || l.phone.includes(q) || (l.email?.toLowerCase().includes(q) ?? false);
     const matchStage  = stageFilter === "All" || l.stage === stageFilter;
     const matchSource = sourceFilter === "All" || l.source === sourceFilter;
     const matchAssign = assigneeFilter === "All" || l.assignedTo === assigneeFilter;
     return matchSearch && matchStage && matchSource && matchAssign;
-  }), [search, stageFilter, sourceFilter, assigneeFilter]);
+  }), [leads, search, stageFilter, sourceFilter, assigneeFilter]);
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-  const assignees = Array.from(new Set(MOCK_LEADS.map(l => l.assignedTo)));
+  const assignees = Array.from(new Set(leads.map(l => l.assignedTo)));
 
   const toggleSelect = (id: string) =>
     setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
@@ -189,7 +322,14 @@ export const LeadsList = () => {
                 </Td>
                 <Td className="text-secondary font-mono text-[12px]">{lead.phone}</Td>
                 <Td><SourceBadge source={lead.source} /></Td>
-                <Td><StageBadge stage={lead.stage} size="sm" /></Td>
+                <Td>
+                  <InlineStagePicker
+                    stage={lead.stage}
+                    leadId={lead.id}
+                    canEdit={canEdit}
+                    onChange={handleStageChange}
+                  />
+                </Td>
                 <Td>
                   <div className="flex items-center gap-1.5">
                     <Avatar name={lead.assignedTo} size={20} />
