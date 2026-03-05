@@ -17,7 +17,7 @@ import { LoginPage } from "../../features/auth/LoginPage";
 import { UnauthorizedPage } from "../../features/auth/UnauthorizedPage";
 import { AuthGuard } from "./AuthGuard";
 import { RoleGuard } from "./RoleGuard";
-import { DashboardOverview } from "../../features/dashboard/DashboardOverview";
+import { DashboardOverview } from "../../features/dashboard/dashboard.index";
 import { LeadsList, LeadsPipeline } from "../../features/leads/LeadsList";
 import { LeadDetail } from "../../features/leads/LeadDetail";
 import { ScheduleCalendar, TrialsPage } from "../../features/schedule/ScheduleCalendar";
@@ -138,7 +138,7 @@ export const router = createBrowserRouter([
       {
         path: "/dashboard",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM","FM","TRAINING_MANAGER","HR"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "RM","FM","TRAINING_MANAGER","HR"]}>
             <DashboardOverview />
           </RoleGuard >
         ),
@@ -146,7 +146,7 @@ export const router = createBrowserRouter([
       {
         path: "/dashboard/tasks",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM","FM","TRAINING_MANAGER"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "RM","FM","TRAINING_MANAGER"]}>
             <PlaceholderPage title="My Tasks" description="Pending actions assigned to you." />
           </RoleGuard >
         ),
@@ -154,7 +154,7 @@ export const router = createBrowserRouter([
       {
         path: "/dashboard/notifications",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM","FM","TRAINING_MANAGER","HR"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "RM","FM","TRAINING_MANAGER","HR"]}>
             <PlaceholderPage title="Notifications" />
           </RoleGuard >
         ),
@@ -164,7 +164,7 @@ export const router = createBrowserRouter([
       {
         path: "/leads",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "RM"]}>
            <LeadsList /> 
           </RoleGuard >
         ),
@@ -204,7 +204,7 @@ export const router = createBrowserRouter([
       {
         path: "/leads/import",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN", "CENTER_MANAGER"]}>
             <PlaceholderPage title="Import Leads" />
           </RoleGuard >
         ),
@@ -214,7 +214,7 @@ export const router = createBrowserRouter([
       {
         path: "/schedule",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM","TRAINING_MANAGER"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM","TRAINING_MANAGER", "CENTER_MANAGER"]}>
             <ScheduleCalendar />
           </RoleGuard >
         ),
@@ -222,7 +222,7 @@ export const router = createBrowserRouter([
       {
         path: "/schedule/trials",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM","TRAINING_MANAGER"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM","TRAINING_MANAGER", "CENTER_MANAGER"]}>
             <TrialsPage />
           </RoleGuard >
         ),
@@ -230,7 +230,7 @@ export const router = createBrowserRouter([
       {
         path: "/schedule/followups",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","RM"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN", "CENTER_MANAGER", "RM"]}>
             <PlaceholderPage title="Follow-ups" />
           </RoleGuard >
         ),
@@ -238,7 +238,7 @@ export const router = createBrowserRouter([
       {
         path: "/schedule/batches",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","TRAINING_MANAGER"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN", "CENTER_MANAGER", "TRAINING_MANAGER"]}>
             <PlaceholderPage title="Batch Schedule" />
           </RoleGuard >
         ),
@@ -248,7 +248,7 @@ export const router = createBrowserRouter([
       {
         path: "/renewals",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM", "CENTER_MANAGER"]}>
             <PlaceholderPage title="Due Renewals" />
           </RoleGuard >
         ),
@@ -256,7 +256,7 @@ export const router = createBrowserRouter([
       {
         path: "/renewals/completed",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM", "CENTER_MANAGER"]}>
             <PlaceholderPage title="Renewed Members" />
           </RoleGuard >
         ),
@@ -264,7 +264,7 @@ export const router = createBrowserRouter([
       {
         path: "/renewals/lapsed",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM", "CENTER_MANAGER"]}>
             <PlaceholderPage title="Lapsed Members" />
           </RoleGuard >
         ),
@@ -282,7 +282,7 @@ export const router = createBrowserRouter([
       {
         path: "/reports",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM", "CENTER_MANAGER", "SALES_MANAGER", "TRAINING_MANAGER"]}>
             <ReportsPage /> 
           </RoleGuard >
         ),
@@ -290,7 +290,7 @@ export const router = createBrowserRouter([
       {
         path: "/reports/leads",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM", "CENTER_MANAGER", "SALES_MANAGER"]}>
             <LeadReportsPage /> 
           </RoleGuard >
         ),
@@ -298,7 +298,7 @@ export const router = createBrowserRouter([
       {
         path: "/reports/sales",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM", "CENTER_MANAGER", "SALES_MANAGER"]}>
             <SalesReportsPage />
           </RoleGuard >
         ),
@@ -306,7 +306,7 @@ export const router = createBrowserRouter([
       {
         path: "/reports/trials",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","TRAINING_MANAGER"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","TRAINING_MANAGER", "CENTER_MANAGER"]}>
             <TrialConversionPage />
           </RoleGuard >
         ),
@@ -314,7 +314,7 @@ export const router = createBrowserRouter([
       {
         path: "/reports/sources",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN", "CENTER_MANAGER", "SALES_MANAGER"]}>
             <SourceAnalyticsPage />
           </RoleGuard >
         ),
@@ -324,7 +324,7 @@ export const router = createBrowserRouter([
       {
         path: "/users",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN", "CENTER_MANAGER"]}>
             <UsersListPage />
           </RoleGuard >
         ),
@@ -340,7 +340,7 @@ export const router = createBrowserRouter([
       {
         path: "/users/invite",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN", "CENTER_MANAGER"]}>
             <PlaceholderPage title="Invite User" />
           </RoleGuard >
         ),
@@ -358,7 +358,7 @@ export const router = createBrowserRouter([
       {
         path: "/settings",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN", "CENTER_MANAGER"]}>
             <GeneralSettings />
           </RoleGuard >
         ),
@@ -382,7 +382,7 @@ export const router = createBrowserRouter([
       {
         path: "/settings/whatsapp",
         element: (
-          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN"]}>
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN", "CENTER_MANAGER"]}>
             <WhatsAppSettings />
           </RoleGuard >
         ),

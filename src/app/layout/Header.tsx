@@ -24,6 +24,8 @@ import { useThemeStore } from "../../store/useThemeStore";
 const ROLE_COLORS: Record<Role, { text: string; bg: string; border: string }> = {
   SUPER_ADMIN:      { text:"text-indigo-400",  bg:"bg-indigo-500/10",  border:"border-indigo-500/20" },
   ADMIN:            { text:"text-violet-400",  bg:"bg-violet-500/10",  border:"border-violet-500/20" },
+  CENTER_MANAGER:   { text:"text-cyan-400",    bg:"bg-cyan-500/10",    border:"border-cyan-500/20" },
+  SALES_MANAGER:    { text:"text-orange-400",  bg:"bg-orange-500/10",  border:"border-orange-500/20" },
   RM:               { text:"text-emerald-400", bg:"bg-emerald-500/10", border:"border-emerald-500/20" },
   FM:               { text:"text-amber-400",   bg:"bg-amber-500/10",   border:"border-amber-500/20" },
   TRAINING_MANAGER: { text:"text-pink-400",    bg:"bg-pink-500/10",    border:"border-pink-500/20" },

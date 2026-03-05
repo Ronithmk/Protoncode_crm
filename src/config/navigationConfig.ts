@@ -7,6 +7,8 @@
 export type Role =
   | "SUPER_ADMIN"
   | "ADMIN"
+  | "CENTER_MANAGER"
+  | "SALES_MANAGER"
   | "RM"
   | "FM"
   | "TRAINING_MANAGER"
@@ -40,6 +42,8 @@ export type ModuleSidebarMap = {
 const ALL_ROLES: Role[] = [
   "SUPER_ADMIN",
   "ADMIN",
+  "CENTER_MANAGER",
+  "SALES_MANAGER",
   "RM",
   "FM",
   "TRAINING_MANAGER",
@@ -63,42 +67,42 @@ export const MAIN_NAV: NavItem[] = [
     label: "Leads",
     path: "/leads",
     icon: "Users",
-    roles: ["SUPER_ADMIN", "ADMIN", "RM"],
+    roles: ["SUPER_ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "ADMIN", "RM"],
   },
   {
     id: "schedule",
     label: "Schedule",
     path: "/schedule",
     icon: "CalendarDays",
-    roles: ["SUPER_ADMIN", "ADMIN", "RM", "TRAINING_MANAGER"],
+    roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "RM", "TRAINING_MANAGER"],
   },
   {
     id: "renewals",
     label: "Renewals",
     path: "/renewals",
     icon: "RefreshCcw",
-    roles: ["SUPER_ADMIN", "ADMIN", "FM"],
+    roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "FM"],
   },
   {
     id: "reports",
     label: "Reports",
     path: "/reports",
     icon: "BarChart3",
-    roles: ["SUPER_ADMIN", "ADMIN", "FM", "TRAINING_MANAGER"],
+    roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "FM", "TRAINING_MANAGER"],
   },
   {
     id: "users",
     label: "Users",
     path: "/users",
-    icon: "UserCog",
-    roles: ["SUPER_ADMIN"], // ADMIN excluded per spec
+    icon: "UserCog",  
+    roles: ["SUPER_ADMIN", "CENTER_MANAGER"], // CENTER_MANAGER: own centre staff only
   },
   {
     id: "settings",
     label: "Settings",
     path: "/settings",
     icon: "Settings2",
-    roles: ["SUPER_ADMIN", "ADMIN"],
+    roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER"],
   },
 ];
 
@@ -121,7 +125,7 @@ export const MODULE_SIDEBAR: ModuleSidebarMap = {
       label: "My Tasks",
       path: "/dashboard/tasks",
       icon: "CheckSquare",
-      roles: ["SUPER_ADMIN", "ADMIN", "RM", "FM", "TRAINING_MANAGER"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "RM", "FM", "TRAINING_MANAGER"],
     },
     {
       id: "notifications",
@@ -138,7 +142,7 @@ export const MODULE_SIDEBAR: ModuleSidebarMap = {
       label: "All Leads",
       path: "/leads",
       icon: "Users",
-      roles: ["SUPER_ADMIN", "ADMIN", "RM"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "RM"],
     },
     {
       id: "my-leads",
@@ -152,14 +156,14 @@ export const MODULE_SIDEBAR: ModuleSidebarMap = {
       label: "Pipeline",
       path: "/leads/pipeline",
       icon: "Workflow",
-      roles: ["SUPER_ADMIN", "ADMIN", "RM"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "RM"],
     },
     {
       id: "lead-sources",
       label: "Lead Sources",
       path: "/leads/sources",
       icon: "GitBranch",
-      roles: ["SUPER_ADMIN", "ADMIN"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "SALES_MANAGER"],
       dividerBefore: true,
     },
     {
@@ -167,7 +171,7 @@ export const MODULE_SIDEBAR: ModuleSidebarMap = {
       label: "Import Leads",
       path: "/leads/import",
       icon: "Upload",
-      roles: ["SUPER_ADMIN", "ADMIN"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER"],
     },
   ],
 
@@ -177,28 +181,28 @@ export const MODULE_SIDEBAR: ModuleSidebarMap = {
       label: "Calendar",
       path: "/schedule",
       icon: "CalendarDays",
-      roles: ["SUPER_ADMIN", "ADMIN", "RM", "TRAINING_MANAGER"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "RM", "TRAINING_MANAGER"],
     },
     {
       id: "trials",
       label: "Trials",
       path: "/schedule/trials",
       icon: "Dumbbell",
-      roles: ["SUPER_ADMIN", "ADMIN", "RM", "TRAINING_MANAGER"],
+      roles: ["SUPER_ADMIN", "ADMIN","CENTER_MANAGER", "RM", "TRAINING_MANAGER"],
     },
     {
       id: "followups",
       label: "Follow-ups",
       path: "/schedule/followups",
       icon: "PhoneCall",
-      roles: ["SUPER_ADMIN", "ADMIN", "RM"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "RM"],
     },
     {
       id: "batch-schedule",
       label: "Batch Schedule",
       path: "/schedule/batches",
       icon: "ListOrdered",
-      roles: ["SUPER_ADMIN", "ADMIN", "TRAINING_MANAGER"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "TRAINING_MANAGER"],
       dividerBefore: true,
     },
   ],
@@ -209,28 +213,28 @@ export const MODULE_SIDEBAR: ModuleSidebarMap = {
       label: "Due Renewals",
       path: "/renewals",
       icon: "AlertCircle",
-      roles: ["SUPER_ADMIN", "ADMIN", "FM"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "FM"],
     },
     {
       id: "renewed",
       label: "Renewed",
       path: "/renewals/completed",
       icon: "CheckCircle2",
-      roles: ["SUPER_ADMIN", "ADMIN", "FM"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "FM"],
     },
     {
       id: "lapsed",
       label: "Lapsed Members",
       path: "/renewals/lapsed",
       icon: "UserX",
-      roles: ["SUPER_ADMIN", "ADMIN", "FM"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "FM"],
     },
     {
       id: "revenue",
       label: "Revenue Summary",
       path: "/renewals/revenue",
       icon: "IndianRupee",
-      roles: ["SUPER_ADMIN", "FM"],
+      roles: ["SUPER_ADMIN", "CENTER_MANAGER", "FM"],
       dividerBefore: true,
     },
   ],
@@ -241,28 +245,28 @@ export const MODULE_SIDEBAR: ModuleSidebarMap = {
       label: "Lead Reports",
       path: "/reports/leads",
       icon: "TrendingUp",
-      roles: ["SUPER_ADMIN", "ADMIN", "FM"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "FM"],
     },
     {
       id: "sales-reports",
       label: "Sales Reports",
       path: "/reports/sales",
       icon: "DollarSign",
-      roles: ["SUPER_ADMIN", "ADMIN", "FM"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "FM"],
     },
     {
       id: "trial-conversion",
       label: "Trial Conversion",
       path: "/reports/trials",
       icon: "Target",
-      roles: ["SUPER_ADMIN", "ADMIN", "TRAINING_MANAGER"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "TRAINING_MANAGER"],
     },
     {
       id: "source-analytics",
       label: "Source Analytics",
       path: "/reports/sources",
       icon: "PieChart",
-      roles: ["SUPER_ADMIN", "ADMIN"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "SALES_MANAGER"],
       dividerBefore: true,
     },
   ],
@@ -273,7 +277,7 @@ export const MODULE_SIDEBAR: ModuleSidebarMap = {
       label: "All Users",
       path: "/users",
       icon: "Users",
-      roles: ["SUPER_ADMIN"],
+      roles: ["SUPER_ADMIN", "CENTER_MANAGER"], // CENTER_MANAGER sees own-centre staff only
     },
     {
       id: "roles",
@@ -287,7 +291,7 @@ export const MODULE_SIDEBAR: ModuleSidebarMap = {
       label: "Invite User",
       path: "/users/invite",
       icon: "UserPlus",
-      roles: ["SUPER_ADMIN"],
+      roles: ["SUPER_ADMIN", "CENTER_MANAGER"],
     },
     {
       id: "activity-log",
@@ -305,7 +309,7 @@ export const MODULE_SIDEBAR: ModuleSidebarMap = {
       label: "General",
       path: "/settings",
       icon: "Settings2",
-      roles: ["SUPER_ADMIN", "ADMIN"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER"],
     },
     {
       id: "security",
@@ -326,7 +330,7 @@ export const MODULE_SIDEBAR: ModuleSidebarMap = {
       label: "WhatsApp",
       path: "/settings/whatsapp",
       icon: "MessageCircle",
-      roles: ["SUPER_ADMIN", "ADMIN"],
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER"],
       dividerBefore: true,
     },
     {

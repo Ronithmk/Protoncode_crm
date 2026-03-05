@@ -23,6 +23,8 @@ import type { User } from "../../store/useAuthStore";
 const DEMO_ACCOUNTS: (User & { password: string })[] = [
   { id:"U001", name:"Rajesh Kumar",  email:"rajesh@dojo.com",  password:"admin123",   role:"SUPER_ADMIN",      center:"All",         avatar:"RK" },
   { id:"U007", name:"Dev Admin",     email:"dev@dojo.com",     password:"admin123",   role:"ADMIN",             center:"Whitefield",  avatar:"DA" },
+  { id:"U008", name:"Aryan TL",      email:"aryan@dojo.com",   password:"lead123",    role:"CENTER_MANAGER",   center:"Koramangala",  avatar:"AT" },
+  { id:"U009", name:"Neha SM",       email:"neha@dojo.com",    password:"sales123",   role:"SALES_MANAGER",    center:"All",          avatar:"NS" },
   { id:"U002", name:"Priya R",       email:"priya@dojo.com",   password:"rm123",      role:"RM",                center:"Koramangala", avatar:"PR" },
   { id:"U004", name:"Meena Sharma",  email:"meena@dojo.com",   password:"fm123",      role:"FM",                center:"Koramangala", avatar:"MS" },
   { id:"U005", name:"Kiran TM",      email:"kiran@dojo.com",   password:"trainer123", role:"TRAINING_MANAGER",  center:"All",         avatar:"KT" },
@@ -33,6 +35,8 @@ const DEMO_ACCOUNTS: (User & { password: string })[] = [
 const ROLE_META: Record<Role, { color: string; icon: string; desc: string }> = {
   SUPER_ADMIN:      { color:"#818cf8", icon:"⚡", desc:"Full system access — all modules, all centres" },
   ADMIN:            { color:"#a78bfa", icon:"◈", desc:"Centre admin — leads, schedule, renewals, settings" },
+  CENTER_MANAGER:   { color:"#22d3ee", icon:"🏢", desc:"Centre Manager — full centre ops, staff, renewals, reports" },
+  SALES_MANAGER:    { color:"#f97316", icon:"📊", desc:"Sales Manager — pipeline, team performance, lead reports" },
   RM:               { color:"#34d399", icon:"📞", desc:"Relationship Manager — leads, calls, trials" },
   FM:               { color:"#fbbf24", icon:"💳", desc:"Finance Manager — renewals, memberships, revenue" },
   TRAINING_MANAGER: { color:"#f472b6", icon:"🥋", desc:"Training Manager — schedule, trials, batches" },

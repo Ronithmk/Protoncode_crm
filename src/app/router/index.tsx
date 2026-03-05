@@ -6,7 +6,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { MainLayout } from "../../app/layout/MainLayout";
 
 // Dashboard
-import { DashboardOverview } from "../../features/dashboard/DashboardOverview";
+import { DashboardOverview } from "../../features/dashboard/DashboardOverview.tsx.doc";
 
 // Leads
 import { LeadsList, LeadsPipeline } from "../../features/leads/LeadsList";

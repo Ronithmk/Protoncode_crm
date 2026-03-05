@@ -49,7 +49,7 @@ const UserDetail = ({ user, onClose }: { user: StaffUser | null; onClose: () => 
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm bg-[#080e1a] border-l border-theme h-full overflow-y-auto shadow-2xl"
+        className="w-full max-w-sm bg-card border-l border-theme h-full overflow-y-auto shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         <div className="p-5 border-b border-theme flex items-center justify-between">
@@ -297,7 +297,7 @@ export const RolesPage = () => {
                 <tr key={`cat-${cat}`}>
                   <td
                     colSpan={ROLES_LIST.length + 1}
-                    className="px-5 py-2 text-[10px] font-bold text-slate-600 uppercase tracking-widest bg-[#080e1a] border-b border-theme"
+                    className="px-5 py-2 text-[10px] font-bold text-secondary uppercase tracking-widest bg-base border-b border-theme"
                   >
                     {cat}
                   </td>
