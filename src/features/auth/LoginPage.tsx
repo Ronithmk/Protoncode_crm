@@ -10,13 +10,15 @@
 // - No role switcher — role is locked to the logged-in account
 // ============================================================
 
-import { useState, FormEvent } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../../utils/cn";
 import { useLogin } from "../../store/useAuthStore";
 import { MAIN_NAV, filterByRole } from "../../config/navigationConfig";
 import type { Role } from "../../config/navigationConfig";
 import type { User } from "../../store/useAuthStore";
+import { LoginHeader } from "./LoginHeader";
 
 // ─── DEMO CREDENTIALS ────────────────────────────────────
 // In production, replace credential checking with a real API call.
@@ -57,7 +59,7 @@ const AuthInput = ({
   autoComplete?: string;
 }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-[11px] font-semibold text-slate-400">{label}</label>
+    <label className="text-[11px] font-semibold text-secondary">{label}</label>
     <div className="relative">
       <input
         type={type}
@@ -66,8 +68,8 @@ const AuthInput = ({
         placeholder={placeholder}
         autoComplete={autoComplete}
         className={cn(
-          "w-full bg-[#162040] border border-[#1e2f52] rounded-xl px-4 py-3",
-          "text-[13px] text-white placeholder:text-slate-600 outline-none",
+          "w-full bg-card border border-theme rounded-xl px-4 py-3",
+          "text-[13px] text-primary placeholder:text-secondary outline-none",
           "focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20",
           "transition-colors duration-150",
           suffix && "pr-12"
@@ -97,15 +99,15 @@ const DemoCard = ({
         "flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer",
         selected
           ? "border-[var(--role-color)] bg-[var(--role-bg)]"
-          : "border-[#1e2f52] bg-[#111d35] hover:border-[#2d4a80] hover:bg-[#162040]"
+          : "border-theme bg-surface hover:border-[var(--primary-color)] hover:bg-base"
       )}
       style={{ "--role-color": meta.color, "--role-bg": `${meta.color}12` } as React.CSSProperties}
     >
       <span className="text-base leading-none flex-shrink-0">{meta.icon}</span>
       <div className="min-w-0">
         <p
-          className="text-[11px] font-700 truncate transition-colors"
-          style={{ color: selected ? meta.color : "#e8edf8", fontWeight: 700 }}
+          className="text-[11px] font-700 truncate transition-colors text-primary"
+          style={{ color: selected ? meta.color : "var(--text-primary)", fontWeight: 700 }}
         >
           {account.name}
         </p>
@@ -170,19 +172,22 @@ export const LoginPage = () => {
   const selectedAccount = DEMO_ACCOUNTS.find(a => a.email === selectedDemo);
 
   return (
-    <div className="min-h-screen bg-[#080e1a] flex items-center justify-center p-4 overflow-hidden relative">
+    <div className="min-h-screen bg-card flex items-center justify-center p-4 overflow-hidden relative">
       {/* Background glow */}
+
+      <LoginHeader  />
+
       <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-radial-indigo pointer-events-none"
         style={{ background:"radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 65%)" }} />
       <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full pointer-events-none"
         style={{ background:"radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 65%)" }} />
 
       {/* Card */}
-      <div className="w-full max-w-[900px] grid grid-cols-1 md:grid-cols-2 rounded-2xl overflow-hidden border border-[#1e2f52] shadow-[0_40px_80px_rgba(0,0,0,0.6)] relative">
+      <div className="w-full max-w-[900px] grid grid-cols-1 md:grid-cols-2 rounded-2xl overflow-hidden border border-theme bg-card shadow-xl relative">
 
         {/* ── LEFT: Branding ── */}
         <div
-          className="relative hidden md:flex flex-col justify-between p-12 bg-[#0d1526] border-r border-[#1e2f52] overflow-hidden"
+          className="relative hidden md:flex flex-col justify-between p-12 bg-surface border-r border-theme overflow-hidden"
         >
           {/* Dot-grid decoration */}
           <div
@@ -200,11 +205,11 @@ export const LoginPage = () => {
                 <p className="text-[16px] font-extrabold text-white tracking-tight">
                   Proton<span className="text-indigo-400">CRM</span>
                 </p>
-                <p className="text-[10px] text-slate-500 tracking-widest uppercase">Martial Arts Management</p>
+                <p className="text-[10px] text-secondary tracking-widest uppercase">Martial Arts Management</p>
               </div>
             </div>
 
-            <h1 className="text-[28px] font-extrabold text-white leading-tight mb-4">
+            <h1 className="text-[28px] font-extrabold text-primary leading-tight mb-4">
               Manage every lead,<br />
               <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
                 every belt earned.
@@ -224,26 +229,26 @@ export const LoginPage = () => {
                 <div className="w-7 h-7 rounded-lg bg-indigo-500/15 border border-indigo-500/20 flex items-center justify-center text-sm flex-shrink-0">
                   {ic}
                 </div>
-                <span className="text-[12px] text-slate-400">{txt}</span>
+                <span className="text-[12px] text-secondary">{txt}</span>
               </div>
             ))}
           </div>
 
-          <p className="relative text-[11px] text-slate-600">
+          <p className="relative text-[11px] text-secondary">
             © 2025 Dojo Martial Arts · All rights reserved
           </p>
         </div>
 
         {/* ── RIGHT: Login form ── */}
-        <div className="bg-[#0d1526] p-8 md:p-12 flex flex-col justify-center">
-          <h2 className="text-[22px] font-extrabold text-white mb-1">Sign in</h2>
-          <p className="text-[13px] text-slate-500 mb-7">
+        <div className="bg-surface p-8 md:p-12 flex flex-col justify-center">
+          <h2 className="text-[22px] font-extrabold text-primary mb-1">Sign in</h2>
+          <p className="text-[13px] text-secondary mb-7">
             Select a demo account or enter credentials manually.
           </p>
 
           {/* Demo account grid */}
           <div className="mb-6">
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-2.5">
+            <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-2.5">
               Demo Accounts
             </p>
             <div className="grid grid-cols-2 gap-2">
@@ -260,9 +265,9 @@ export const LoginPage = () => {
 
           {/* Divider */}
           <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-[#1e2f52]" />
-            <span className="text-[11px] text-slate-600">or enter manually</span>
-            <div className="flex-1 h-px bg-[#1e2f52]" />
+            <div className="flex-1 h-px border-divider" />
+            <span className="text-[11px] text-secondary">or enter manually</span>
+            <div className="flex-1 h-px border-divider" />
           </div>
 
           {/* Form */}
@@ -286,7 +291,7 @@ export const LoginPage = () => {
                 <button
                   type="button"
                   onClick={() => setShowPw(p => !p)}
-                  className="text-slate-500 hover:text-white transition-colors text-sm"
+                  className="text-secondary hover:text-primary transition-colors text-sm"
                 >
                   {showPw ? "🙈" : "👁"}
                 </button>
@@ -295,9 +300,9 @@ export const LoginPage = () => {
 
             {/* Error */}
             {error && (
-              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/8 border border-red-500/20">
+              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl danger-bg danger-border danger-text">
                 <span className="text-sm">⚠</span>
-                <span className="text-[12px] text-red-400">{error}</span>
+                <span className="text-[12px] danger-text">{error}</span>
               </div>
             )}
 
@@ -306,7 +311,7 @@ export const LoginPage = () => {
               type="submit"
               disabled={loading || !email || !password}
               className={cn(
-                "mt-1 py-3 rounded-xl text-[14px] font-bold text-white transition-all duration-200",
+                "mt-1 py-3 rounded-xl text-[14px] font-bold text-primary transition-all duration-200",
                 "disabled:opacity-40 disabled:cursor-not-allowed",
                 "enabled:bg-gradient-to-r enabled:from-indigo-600 enabled:to-violet-600",
                 "enabled:shadow-[0_6px_20px_rgba(99,102,241,0.35)]",
@@ -334,7 +339,7 @@ export const LoginPage = () => {
               <p className="text-[11px] font-bold mb-0.5" style={{ color: ROLE_META[selectedAccount.role].color }}>
                 {ROLE_META[selectedAccount.role].icon} {selectedAccount.role.replace("_", " ")} — {selectedAccount.name}
               </p>
-              <p className="text-[11px] text-slate-500">{ROLE_META[selectedAccount.role].desc}</p>
+              <p className="text-[11px] text-secondary">{ROLE_META[selectedAccount.role].desc}</p>
             </div>
           )}
         </div>

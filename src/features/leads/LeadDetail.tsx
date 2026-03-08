@@ -225,7 +225,7 @@ const ActionPanel = ({
   </Card>
 );
 
-const ActionGrid = ({ actions, accent }: { actions: string[]; accent: string }) => (
+const ActionGrid = ({ actions }: { actions: string[]; }) => (
   <div className="grid grid-cols-2 gap-2">
     {actions.map(action => (
       <button
@@ -393,7 +393,6 @@ export const LeadDetail = () => {
           {canCall && (
             <ActionPanel title="📞 Call Handling" accent="#6366f1">
               <ActionGrid
-                accent="#6366f1"
                 actions={["Log Call","Schedule Follow-up","Send WhatsApp","Mark No Answer","Update Stage","Add to Pipeline"]}
               />
             </ActionPanel>

@@ -69,7 +69,7 @@ export const useAuthStore = create<AuthState>()(
 
 /** The current user's role, or HR as a safe fallback. */
 export const useRole = () =>
-  useAuthStore((s) => s.user?.role);
+  useAuthStore((s) => s.user?.role ?? "HR");
 
 /** The full current user object (may be null if not logged in). */
 export const useUser = () =>

@@ -99,6 +99,10 @@
     background-color: var(--border-color);
   }
   
+  .surface-border {
+    border: 1px solid var(--border-color);
+  }
+  
   .divide-theme > * + * {
     border-top: 1px solid var(--border-color);
   }

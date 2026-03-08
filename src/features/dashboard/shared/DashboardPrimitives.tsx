@@ -83,7 +83,7 @@ export const Btn = ({
   children, onClick, variant = "sec", size = "sm",
 }: {
   children: React.ReactNode;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
   variant?: "pri" | "sec" | "ghost";
   size?: "sm" | "md";
 }) => {

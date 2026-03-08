@@ -229,7 +229,7 @@ export const Select = ({ label, className, children, ...props }: SelectProps) =>
 );
 
 // ─── CARD ────────────────────────────────────────────────
-type CardProps = { className?: string; children: React.ReactNode; hover?: boolean };
+type CardProps = { className?: string; children: React.ReactNode; hover?: boolean, style?: React.CSSProperties; };
 export const Card = ({ className, children, hover }: CardProps) => (
   <div className={cn(
     "bg-card border border-theme rounded-xl",
@@ -289,6 +289,7 @@ export const Modal = ({ open, onClose, title, children, width = "max-w-lg" }: Mo
           >
             ✕
           </button>
+          
         </div>
 
         <div className="p-6">{children}</div>

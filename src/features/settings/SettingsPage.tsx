@@ -418,7 +418,7 @@ export const LeadStagesSettings = () => {
 
       <Card className="p-4">
         <div className="space-y-2">
-          {stages.map((stage, i) => (
+          {stages.map((stage) => (
             <div
               key={stage.id}
               className="flex items-center gap-3 bg-surface border border-theme rounded-xl px-4 py-3 hover:border-[var(--primary-color)] transition-colors group"

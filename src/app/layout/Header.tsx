@@ -130,7 +130,7 @@ export const Header = () => {
   const user = useUser();
   const location = useLocation();
   
-  const { theme, resolvedTheme, setTheme } = useThemeStore();
+  const { resolvedTheme, setTheme } = useThemeStore();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const activeModule = getModuleFromPath(location.pathname);
