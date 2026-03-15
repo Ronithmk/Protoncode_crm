@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
+import FloatingChatBot from "../../components/ui/FloatingChatBot";
 
 export const MainLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -24,6 +25,10 @@ export const MainLayout = () => {
         {/* ── Main content ── */}
         <main className="flex-1 overflow-y-auto bg-base">
           <Outlet />
+
+
+        {/* Floating AI Chatbot */}
+        <FloatingChatBot />
         </main>
 
       </div>
