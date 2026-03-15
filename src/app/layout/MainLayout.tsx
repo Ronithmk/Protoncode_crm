@@ -25,13 +25,12 @@ export const MainLayout = () => {
         {/* ── Main content ── */}
         <main className="flex-1 overflow-y-auto bg-base">
           <Outlet />
-
+        </main>
+        
+      </div>
 
         {/* Floating AI Chatbot */}
         <FloatingChatBot />
-        </main>
-
-      </div>
     </div>
   );
 };

@@ -1,25 +1,26 @@
+// features/ai/FloatingChatBot.tsx
+// Proton AI — floating CRM assistant.
+// 100% Tailwind CSS — the only <style> block is 8 @keyframe definitions
+// that Tailwind cannot express at runtime (nth-child animation-delays, custom bezier curves).
+
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { cn } from "../../utils/cn";
+import { useUser, useRole } from "../../store/useAuthStore";
+import {
+  MOCK_LEADS, MOCK_TASKS, MOCK_TRIALS,
+  REPORT_METRICS, LEAD_CHART_DATA, SOURCE_CHART_DATA,
+} from "../../data/mockData";
 
-// ─── SpeechRecognition types (not in lib.dom.d.ts by default) ────────────────
+// ─── SpeechRecognition types ─────────────────────────────
 interface ISpeechRecognition extends EventTarget {
-  lang: string;
-  interimResults: boolean;
+  lang: string; interimResults: boolean;
   onresult: ((e: ISpeechRecognitionEvent) => void) | null;
-  onerror: (() => void) | null;
-  onend: (() => void) | null;
-  start(): void;
-  stop(): void;
+  onerror: (() => void) | null; onend: (() => void) | null;
+  start(): void; stop(): void;
 }
-
-interface ISpeechRecognitionEvent {
-  results: { 0: { 0: { transcript: string } } };
-}
-
-interface SpeechRecognitionConstructor {
-  new (): ISpeechRecognition;
-}
-
+interface ISpeechRecognitionEvent { results: { 0: { 0: { transcript: string } } }; }
+interface SpeechRecognitionConstructor { new(): ISpeechRecognition; }
 declare global {
   interface Window {
     SpeechRecognition?: SpeechRecognitionConstructor;
@@ -27,794 +28,623 @@ declare global {
   }
 }
 
+// ─── Types ───────────────────────────────────────────────
+type Sender   = "user" | "bot";
+type CardType = "analytics" | "lead_form" | "lead_list" | "task_list" | "trial_list" | "quick_nav";
+interface CardData { type: CardType; payload?: Record<string, unknown>; }
+interface Message  { id: string; sender: Sender; text: string; card?: CardData; streaming?: boolean; }
 
-type Sender = "user" | "bot";
-type CardType = "analytics" | "lead_form" | "assign" | "contact_action" | "lead_list";
-
-interface CardData {
-  type: CardType;
-  payload?: Record<string, unknown>;
-}
-
-interface Message {
-  id: string;
-  sender: Sender;
-  text: string;
-  card?: CardData;
-  streaming?: boolean;
-}
-
-// ─── Mock CRM Data ────────────────────────────────────────────────────────────
-const MOCK_ANALYTICS = {
-  totalLeads: 127,
-  converted: 42,
-  convRate: "33%",
-  topSource: "Meta Ads",
-  revenue: "₹21K",
-  sources: [
-    { name: "Meta Ads", volume: 9, converted: 3, share: 45 },
-    { name: "WhatsApp", volume: 7, converted: 2, share: 30 },
-    { name: "Walk-in", volume: 5, converted: 1, share: 25 },
-  ],
-  agents: [
-    { name: "Ravi Kumar", leads: 34, closed: 14 },
-    { name: "Priya S", leads: 28, closed: 11 },
-    { name: "Arun M", leads: 22, closed: 9 },
-  ],
-};
-
-const MOCK_LEADS = [
-  { id: "L001", name: "Sanjay Mehta", source: "Meta Ads", status: "New", agent: "Ravi Kumar", phone: "+91 98765 43210" },
-  { id: "L002", name: "Divya Rao", source: "WhatsApp", status: "Follow-up", agent: "Priya S", phone: "+91 87654 32109" },
-  { id: "L003", name: "Kiran Patel", source: "Walk-in", status: "Converted", agent: "Arun M", phone: "+91 76543 21098" },
-];
-
-// ─── Intent Matcher ───────────────────────────────────────────────────────────
+// ─── Intent matcher ──────────────────────────────────────
 function detectIntent(text: string): string {
   const t = text.toLowerCase();
-  if (/analytics|source|roi|performance|revenue|conversion|stats|report/.test(t)) return "analytics";
-  if (/create|add|new lead|add lead/.test(t)) return "create_lead";
-  if (/assign|transfer|move lead/.test(t)) return "assign_lead";
-  if (/whatsapp|email|message|contact|send/.test(t)) return "contact_action";
-  if (/leads|pipeline|list|show leads/.test(t)) return "show_leads";
-  if (/dashboard/.test(t)) return "navigate_dashboard";
-  if (/meeting|schedule|appointment/.test(t)) return "navigate_meetings";
-  if (/deals/.test(t)) return "navigate_deals";
-  if (/hello|hi|hey|start/.test(t)) return "greet";
-  if (/help|what can you|options/.test(t)) return "help";
+  if (/analytics|source|roi|performance|revenue|conversion|stats|report|metric/.test(t)) return "analytics";
+  if (/create|add|new lead|add lead/.test(t))          return "create_lead";
+  if (/my leads?|assigned to me|my pipeline/.test(t))  return "my_leads";
+  if (/leads?|pipeline|list|show leads/.test(t))       return "show_leads";
+  if (/task|todo|pending|due today/.test(t))           return "show_tasks";
+  if (/trial|session|schedule|batch/.test(t))          return "show_trials";
+  if (/follow.?up|call due|whatsapp/.test(t))          return "show_followups";
+  if (/renewal|expire|lapsed|member/.test(t))          return "show_renewals";
+  if (/dashboard|home|overview/.test(t))               return "nav_dashboard";
+  if (/import/.test(t))                                return "nav_import";
+  if (/setting/.test(t))                               return "nav_settings";
+  if (/user|staff|team|invite/.test(t))                return "nav_users";
+  if (/hello|hi|hey|start/.test(t))                    return "greet";
+  if (/help|what can you|option/.test(t))              return "help";
   return "unknown";
 }
 
-// ─── Mock Response Generator ──────────────────────────────────────────────────
-function getMockResponse(intent: string): { text: string; card?: CardData } {
+// ─── Response builder ────────────────────────────────────
+function buildResponse(
+  intent: string,
+  user: ReturnType<typeof useUser>,
+  role: string,
+): { text: string; card?: CardData; navigateTo?: string } {
+  const name         = user?.name?.split(" ")[0] ?? "there";
+  const myLeads      = MOCK_LEADS.filter(l => l.assignedTo === user?.name);
+  const myTasks      = MOCK_TASKS.filter(t => t.assignedTo === user?.name && !t.done);
+  const pendingTasks = MOCK_TASKS.filter(t => !t.done);
+  const total        = MOCK_LEADS.length;
+  const converted    = MOCK_LEADS.filter(l => ["Joined","Membership Active","Renewal"].includes(l.stage)).length;
+  const convRate     = total > 0 ? Math.round((converted / total) * 100) : 0;
+  const todayTrials  = MOCK_TRIALS.filter(t => t.date === "2025-02-28");
+
   switch (intent) {
-    case "analytics":
+    case "greet": return {
+      text: `Hey ${name}! 👋 I'm Proton AI, your CRM assistant. Ask me about leads, analytics, tasks, or use the quick actions below.`,
+      card: { type: "quick_nav" },
+    };
+    case "help": return {
+      text: `Here's what I can do, ${name}:\n• 📊 Analytics & source performance\n• 📋 Your leads, tasks, trials\n• ➕ Create a new lead\n• 🔔 Pending follow-ups\n• 🔄 Renewals & lapsed members\n• 🧭 Navigate anywhere in the CRM`,
+    };
+    case "analytics": {
+      const topSrc = SOURCE_CHART_DATA.reduce((a, b) => a.value > b.value ? a : b);
+      const rev    = REPORT_METRICS.find(m => m.label === "Total Revenue");
       return {
-        text: "Here's your current source analytics breakdown 📊",
-        card: { type: "analytics", payload: MOCK_ANALYTICS },
+        text: "Here's your CRM performance overview 📊",
+        card: {
+          type: "analytics",
+          payload: {
+            totalLeads: total, converted, convRate,
+            topSource: topSrc.label,
+            revenue: rev ? `₹${(rev.value / 1000).toFixed(0)}K` : "—",
+            sources: SOURCE_CHART_DATA.map(s => ({ name: s.label, share: s.value })),
+            trend:   LEAD_CHART_DATA.slice(-4),
+          },
+        },
       };
-    case "create_lead":
+    }
+    case "my_leads":
+      if (!myLeads.length) return { text: `No leads assigned yet, ${name}.` };
       return {
-        text: "Sure! Fill in the details below to create a new lead 🎯",
-        card: { type: "lead_form" },
+        text: `You have ${myLeads.length} lead${myLeads.length > 1 ? "s" : ""} assigned 📋`,
+        card: { type: "lead_list", payload: { leads: myLeads.slice(0,4), mine: true } },
+        navigateTo: "/leads/mine",
       };
-    case "assign_lead":
+    case "show_leads": return {
+      text: `Here are ${MOCK_LEADS.length} leads in the CRM 📋`,
+      card: { type: "lead_list", payload: { leads: MOCK_LEADS.slice(0,4) } },
+      navigateTo: "/leads",
+    };
+    case "create_lead": return {
+      text: "Fill in the details to add a new lead ➕",
+      card: { type: "lead_form" },
+    };
+    case "show_tasks": {
+      const tasks = ["SUPER_ADMIN","ADMIN","CENTER_MANAGER","SALES_MANAGER"].includes(role)
+        ? pendingTasks : myTasks;
+      if (!tasks.length) return { text: `No pending tasks, ${name}! All clear ✓` };
       return {
-        text: "Select a lead to assign to one of your agents 👥",
-        card: { type: "assign", payload: { leads: MOCK_LEADS, agents: MOCK_ANALYTICS.agents } },
+        text: `${tasks.length} pending task${tasks.length > 1 ? "s" : ""} ✅`,
+        card: { type: "task_list", payload: { tasks: tasks.slice(0,4) } },
+        navigateTo: "/dashboard/tasks",
       };
-    case "contact_action":
+    }
+    case "show_trials":
+      if (!todayTrials.length) return { text: "No trials scheduled for today." };
       return {
-        text: "Choose a lead to reach out to 📲",
-        card: { type: "contact_action", payload: { leads: MOCK_LEADS } },
+        text: `${todayTrials.length} trial${todayTrials.length > 1 ? "s" : ""} today 🥋`,
+        card: { type: "trial_list", payload: { trials: todayTrials } },
+        navigateTo: "/schedule/trials",
       };
-    case "show_leads":
-      return {
-        text: "Here are your recent leads 📋",
-        card: { type: "lead_list", payload: { leads: MOCK_LEADS } },
-      };
-    case "greet":
-      return { text: "Hey there! 👋 I'm ProCody, your CRM assistant. Ask me about analytics, leads, assignments, or use the quick actions. What can I help with?" };
-    case "help":
-      return { text: "I can help you with:\n• 📊 View source analytics & ROI\n• 🎯 Create or update leads\n• 👥 Assign leads to agents\n• 📲 Send WhatsApp or email to leads\n• 📋 Browse your leads pipeline\n• 🧭 Navigate to any CRM section" };
-    case "navigate_dashboard":
-      return { text: "Navigating to Dashboard... 🏠" };
-    case "navigate_meetings":
-      return { text: "Opening your Schedule... 📅" };
-    case "navigate_deals":
-      return { text: "Opening Deals Pipeline... 💼" };
+    case "show_followups": return { text: "Opening follow-ups 📞",            navigateTo: "/schedule/followups" };
+    case "show_renewals":  return { text: "Opening renewals overview 🔄",     navigateTo: "/renewals"           };
+    case "nav_dashboard":  return { text: "Heading to Dashboard 🏠",           navigateTo: "/dashboard"          };
+    case "nav_import":     return { text: "Opening lead import 📂",            navigateTo: "/leads/import"       };
+    case "nav_settings":   return { text: "Opening settings ⚙",               navigateTo: "/settings"           };
+    case "nav_users":      return { text: "Opening team directory 👥",         navigateTo: "/users"              };
     default: {
-      const fallbacks = [
-        "I don't have that data right now, but once the backend is live I'll pull it in real-time! Try asking about 'analytics', 'leads', or 'assign leads'.",
-        "That's a great question! My full intelligence kicks in when the backend is connected. For now, try: 'show analytics' or 'create a lead'.",
-        "I'm in prototype mode 🚧 — ask me about analytics, leads, or assignments and I'll show you what the live experience will look like.",
+      const hints = [
+        `Try: "show analytics", "my leads", or "my tasks".`,
+        `Ask about "today's trials", "source analytics", or "pending renewals".`,
+        `Not sure about that one. Try "show leads" or "show analytics".`,
       ];
-      return { text: fallbacks[Math.floor(Math.random() * fallbacks.length)] };
+      return { text: hints[Math.floor(Math.random() * hints.length)] };
     }
   }
 }
 
-// ─── Streaming Simulation ─────────────────────────────────────────────────────
-function streamText(
-  fullText: string,
-  onChunk: (partial: string) => void,
-  onDone: () => void
-) {
+// ─── Stream text ─────────────────────────────────────────
+function streamText(full: string, onChunk: (s: string) => void, onDone: () => void) {
   let i = 0;
-  const speed = 18;
   const tick = () => {
-    if (i <= fullText.length) {
-      onChunk(fullText.slice(0, i));
-      i++;
-      setTimeout(tick, speed);
-    } else {
-      onDone();
-    }
+    if (i <= full.length) { onChunk(full.slice(0, i)); i++; setTimeout(tick, 16); }
+    else onDone();
   };
   tick();
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Stage colours (static hex — no CSS var needed) ──────
+const STAGE_COLOR: Record<string, string> = {
+  "Lead Created":"#6366f1", "Call Handling":"#f59e0b", "Followup":"#fbbf24",
+  "Trial Booked":"#10b981", "Trial Done":"#34d399",    "Joined":"#22c55e",
+  "Membership Active":"#4ade80", "Renewal":"#f87171",
+};
 
-const AnalyticsCard = ({ data }: { data: typeof MOCK_ANALYTICS }) => (
-  <div style={styles.card}>
-    <div style={styles.cardTitle}>📊 Source Analytics</div>
-    <div style={styles.statsRow}>
-      <div style={styles.statBox}><div style={styles.statVal}>{data.totalLeads}</div><div style={styles.statLbl}>Total Leads</div></div>
-      <div style={styles.statBox}><div style={styles.statVal}>{data.convRate}</div><div style={styles.statLbl}>Conv. Rate</div></div>
-      <div style={styles.statBox}><div style={styles.statVal}>{data.revenue}</div><div style={styles.statLbl}>Revenue</div></div>
-    </div>
-    {data.sources.map((s) => (
-      <div key={s.name} style={styles.sourceRow}>
-        <span style={styles.sourceName}>{s.name}</span>
-        <div style={styles.barWrap}>
-          <div style={{ ...styles.bar, width: `${s.share}%`, background: s.name === "Meta Ads" ? "#6366f1" : s.name === "WhatsApp" ? "#4ade80" : "#f59e0b" }} />
-        </div>
-        <span style={styles.shareVal}>{s.share}%</span>
-      </div>
-    ))}
-    <div style={styles.agentSection}>
-      <div style={styles.agentTitle}>Top Agents</div>
-      {data.agents.map((a) => (
-        <div key={a.name} style={styles.agentRow}>
-          <span style={styles.agentAvatar}>{a.name.charAt(0)}</span>
-          <span style={styles.agentName}>{a.name}</span>
-          <span style={styles.agentStat}>{a.closed}/{a.leads} closed</span>
-        </div>
-      ))}
-    </div>
+// ─── Shared card shell ───────────────────────────────────
+const CardWrap = ({ children }: { children: React.ReactNode }) => (
+  <div className="mt-1.5 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-3">
+    {children}
   </div>
 );
+const CardTitle = ({ children }: { children: React.ReactNode }) => (
+  <p className="mb-2.5 text-[10px] font-800 uppercase tracking-wider text-secondary">{children}</p>
+);
+const CardBtn = ({ children, onClick, disabled }: {
+  children: React.ReactNode; onClick?: () => void; disabled?: boolean;
+}) => (
+  <button
+    onClick={onClick} disabled={disabled}
+    className="mt-2 w-full rounded-lg bg-[var(--primary-color)] py-1.5 text-[12px] font-600 text-white transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
+  >
+    {children}
+  </button>
+);
+const FIELD = "mb-1.5 w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-base)] px-2.5 py-1.5 text-[12px] text-primary outline-none transition-colors focus:border-[var(--primary-color)]";
 
-const LeadFormCard = ({ onSubmit }: { onSubmit: (msg: string) => void }) => {
-  const [form, setForm] = useState({ name: "", phone: "", source: "Meta Ads", status: "New" });
-  const [submitted, setSubmitted] = useState(false);
-  const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
-  const handleSubmit = () => {
-    if (!form.name || !form.phone) return;
-    setSubmitted(true);
-    onSubmit(`✅ Lead **${form.name}** created successfully! Source: ${form.source}, Status: ${form.status}`);
-  };
-  if (submitted) return null;
-  return (
-    <div style={styles.card}>
-      <div style={styles.cardTitle}>🎯 Create New Lead</div>
-      <input style={styles.input} placeholder="Full Name *" value={form.name} onChange={e => set("name", e.target.value)} />
-      <input style={styles.input} placeholder="Phone Number *" value={form.phone} onChange={e => set("phone", e.target.value)} />
-      <select style={styles.select} value={form.source} onChange={e => set("source", e.target.value)}>
-        {["Meta Ads", "WhatsApp", "Walk-in", "Referral"].map(s => <option key={s}>{s}</option>)}
-      </select>
-      <select style={styles.select} value={form.status} onChange={e => set("status", e.target.value)}>
-        {["New", "Follow-up", "Qualified", "Converted", "Lost"].map(s => <option key={s}>{s}</option>)}
-      </select>
-      <button style={styles.cardBtn} onClick={handleSubmit}>Create Lead →</button>
-    </div>
-  );
-};
-
-const AssignCard = ({ leads, agents, onSubmit }: { leads: typeof MOCK_LEADS; agents: typeof MOCK_ANALYTICS.agents; onSubmit: (msg: string) => void }) => {
-  const [sel, setSel] = useState({ lead: leads[0].id, agent: agents[0].name });
-  const [done, setDone] = useState(false);
-  const handleAssign = () => {
-    setDone(true);
-    const lead = leads.find(l => l.id === sel.lead);
-    onSubmit(`✅ Lead **${lead?.name}** has been assigned to **${sel.agent}** successfully!`);
-  };
-  if (done) return null;
-  return (
-    <div style={styles.card}>
-      <div style={styles.cardTitle}>👥 Assign Lead</div>
-      <div style={styles.fieldLabel}>Select Lead</div>
-      <select style={styles.select} value={sel.lead} onChange={e => setSel(p => ({ ...p, lead: e.target.value }))}>
-        {leads.map(l => <option key={l.id} value={l.id}>{l.name} — {l.status}</option>)}
-      </select>
-      <div style={styles.fieldLabel}>Assign to Agent</div>
-      <select style={styles.select} value={sel.agent} onChange={e => setSel(p => ({ ...p, agent: e.target.value }))}>
-        {agents.map(a => <option key={a.name}>{a.name} ({a.leads} leads)</option>)}
-      </select>
-      <button style={styles.cardBtn} onClick={handleAssign}>Assign →</button>
-    </div>
-  );
-};
-
-const ContactActionCard = ({ leads, onSubmit }: { leads: typeof MOCK_LEADS; onSubmit: (msg: string) => void }) => {
-  const [sel, setSel] = useState(leads[0].id);
-  const handle = (method: string) => {
-    const lead = leads.find(l => l.id === sel);
-    onSubmit(`📤 ${method} message queued for **${lead?.name}** (${lead?.phone}). Will send once backend is connected!`);
+// ─── Analytics card ──────────────────────────────────────
+const AnalyticsCard = ({ payload }: { payload: Record<string, unknown> }) => {
+  const sources = payload.sources as { name: string; share: number }[];
+  const trend   = payload.trend   as { label: string; value: number }[];
+  const maxBar  = Math.max(...(trend?.map(d => d.value) ?? [1]));
+  const SRC_BG: Record<string,string> = {
+    "Meta Ads":"bg-[var(--primary-color)]",
+    "WhatsApp":"bg-[var(--success-color)]",
+    "Walk-in": "bg-[var(--warning-color)]",
   };
   return (
-    <div style={styles.card}>
-      <div style={styles.cardTitle}>📲 Contact Lead</div>
-      <select style={styles.select} value={sel} onChange={e => setSel(e.target.value)}>
-        {leads.map(l => <option key={l.id} value={l.id}>{l.name} — {l.phone}</option>)}
-      </select>
-      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-        <button style={{ ...styles.cardBtn, flex: 1, background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)" }} onClick={() => handle("WhatsApp")}>
-          WhatsApp
-        </button>
-        <button style={{ ...styles.cardBtn, flex: 1, background: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.3)" }} onClick={() => handle("Email")}>
-          Email
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const LeadListCard = ({ leads }: { leads: typeof MOCK_LEADS }) => {
-  const statusColor: Record<string, string> = { New: "#60a5fa", "Follow-up": "#f59e0b", Converted: "#4ade80", Lost: "#f87171" };
-  return (
-    <div style={styles.card}>
-      <div style={styles.cardTitle}>📋 Recent Leads</div>
-      {leads.map(l => (
-        <div key={l.id} style={styles.leadRow}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ ...styles.leadAvatar, background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>{l.name.charAt(0)}</div>
-            <div>
-              <div style={styles.leadName}>{l.name}</div>
-              <div style={styles.leadMeta}>{l.source} · {l.agent}</div>
-            </div>
+    <CardWrap>
+      <CardTitle>📊 Performance Overview</CardTitle>
+      <div className="mb-2.5 flex gap-1.5">
+        {[
+          { v: String(payload.totalLeads), l: "Leads"   },
+          { v: `${payload.convRate}%`,     l: "Conv."   },
+          { v: String(payload.revenue),   l: "Revenue" },
+        ].map(s => (
+          <div key={s.l} className="flex-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-base)] py-1.5 text-center">
+            <p className="text-[13px] font-800 text-primary">{s.v}</p>
+            <p className="text-[9px] text-secondary">{s.l}</p>
           </div>
-          <span style={{ ...styles.statusBadge, color: statusColor[l.status] || "#e0e4ff", borderColor: statusColor[l.status] || "#e0e4ff" }}>{l.status}</span>
+        ))}
+      </div>
+      {sources?.map(s => (
+        <div key={s.name} className="mb-1.5 flex items-center gap-2">
+          <span className="w-14 flex-shrink-0 truncate text-[10px] text-secondary">{s.name}</span>
+          <div className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--bg-base)]">
+            <div className={cn("h-full rounded-full transition-all duration-500", SRC_BG[s.name] ?? "bg-[var(--primary-color)]")}
+              style={{ width: `${s.share}%` }} />
+          </div>
+          <span className="w-6 flex-shrink-0 text-right text-[10px] text-[var(--primary-color)]">{s.share}%</span>
         </div>
       ))}
-    </div>
+      {trend && (
+        <div className="mt-2.5 flex h-10 items-end gap-1">
+          {trend.map((d, i) => (
+            <div key={i} className="flex h-full flex-1 flex-col items-center justify-end gap-0.5">
+              <div className="w-full min-h-[3px] rounded-t-sm bg-[var(--primary-color)]"
+                style={{ height: `${Math.round((d.value / maxBar) * 32) + 3}px`, opacity: i === trend.length - 1 ? 1 : 0.3 + i * 0.2 }} />
+              <span className="text-[8px] text-secondary">{d.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </CardWrap>
   );
 };
 
-// ─── Styles object ────────────────────────────────────────────────────────────
-const styles: Record<string, React.CSSProperties> = {
-  card: { background: "rgba(30,34,53,0.95)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 12, padding: "12px 13px", marginTop: 4, width: "100%" },
-  cardTitle: { fontSize: 12, fontWeight: 700, color: "#a5b4fc", marginBottom: 10, letterSpacing: 0.3 },
-  statsRow: { display: "flex", gap: 6, marginBottom: 10 },
-  statBox: { flex: 1, background: "rgba(99,102,241,0.1)", borderRadius: 8, padding: "7px 8px", textAlign: "center" },
-  statVal: { fontSize: 15, fontWeight: 700, color: "#e0e4ff" },
-  statLbl: { fontSize: 10, color: "#4a5568", marginTop: 1 },
-  sourceRow: { display: "flex", alignItems: "center", gap: 7, marginBottom: 6 },
-  sourceName: { fontSize: 11, color: "#8892b0", width: 60, flexShrink: 0 },
-  barWrap: { flex: 1, height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" },
-  bar: { height: "100%", borderRadius: 3, transition: "width 0.6s ease" },
-  shareVal: { fontSize: 11, color: "#6366f1", width: 30, textAlign: "right" },
-  agentSection: { marginTop: 10, borderTop: "1px solid rgba(99,102,241,0.1)", paddingTop: 8 },
-  agentTitle: { fontSize: 10, color: "#4a5568", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 },
-  agentRow: { display: "flex", alignItems: "center", gap: 7, marginBottom: 5 },
-  agentAvatar: { width: 22, height: 22, borderRadius: 6, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "white", flexShrink: 0 },
-  agentName: { flex: 1, fontSize: 12, color: "#c7d2fe" },
-  agentStat: { fontSize: 11, color: "#4a5568" },
-  input: { width: "100%", background: "#13161f", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 8, color: "#e0e4ff", padding: "7px 10px", fontSize: 12.5, marginBottom: 6, outline: "none", fontFamily: "inherit", boxSizing: "border-box" },
-  select: { width: "100%", background: "#13161f", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 8, color: "#a5b4fc", padding: "7px 10px", fontSize: 12.5, marginBottom: 6, outline: "none", fontFamily: "inherit", boxSizing: "border-box" },
-  cardBtn: { width: "100%", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", border: "none", borderRadius: 8, color: "white", padding: "8px", fontSize: 12.5, cursor: "pointer", marginTop: 4, fontFamily: "inherit" },
-  fieldLabel: { fontSize: 10, color: "#4a5568", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8 },
-  leadRow: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 0", borderBottom: "1px solid rgba(99,102,241,0.07)" },
-  leadAvatar: { width: 26, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "white", flexShrink: 0 },
-  leadName: { fontSize: 12.5, color: "#e0e4ff", fontWeight: 500 },
-  leadMeta: { fontSize: 11, color: "#4a5568", marginTop: 1 },
-  statusBadge: { fontSize: 10, padding: "2px 7px", borderRadius: 10, border: "1px solid", background: "transparent" },
+// ─── Lead list card ──────────────────────────────────────
+const LeadListCard = ({ payload, onNavigate }: { payload: Record<string, unknown>; onNavigate: (p: string) => void }) => {
+  const leads = payload.leads as typeof MOCK_LEADS;
+  const mine  = payload.mine  as boolean;
+  return (
+    <CardWrap>
+      <CardTitle>{mine ? "👤 My Leads" : "📋 All Leads"}</CardTitle>
+      {leads.map((l, i) => (
+        <div key={l.id} className={cn("flex items-center gap-2 py-1.5", i < leads.length - 1 && "border-b border-[var(--border-color)]")}>
+          <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg bg-[var(--primary-color)] text-[10px] font-700 text-white">
+            {l.name.charAt(0)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="truncate text-[11px] font-600 text-primary">{l.name}</p>
+            <p className="text-[9px] text-secondary">{l.source} · {l.center}</p>
+          </div>
+          <span className="h-2 w-2 flex-shrink-0 rounded-full"
+            style={{ background: STAGE_COLOR[l.stage] ?? "var(--text-secondary)" }} />
+        </div>
+      ))}
+      <CardBtn onClick={() => onNavigate(mine ? "/leads/mine" : "/leads")}>View all leads →</CardBtn>
+    </CardWrap>
+  );
 };
 
-// ─── Chips & Options ──────────────────────────────────────────────────────────
-const CHIPS = ["Show analytics", "Create a lead", "Assign lead", "Show leads list", "Contact a lead"];
+// ─── Lead form card ──────────────────────────────────────
+const LeadFormCard = ({ onDone }: { onDone: (msg: string) => void }) => {
+  const [form, setForm] = useState({ name:"", phone:"", source:"Meta Ads", stage:"Lead Created" });
+  const [done, setDone] = useState(false);
+  const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  if (done) return null;
+  return (
+    <CardWrap>
+      <CardTitle>➕ Create New Lead</CardTitle>
+      <input className={FIELD} placeholder="Full Name *"     value={form.name}  onChange={e => set("name",  e.target.value)} />
+      <input className={FIELD} placeholder="Phone Number *"  value={form.phone} onChange={e => set("phone", e.target.value)} />
+      <select className={FIELD} value={form.source} onChange={e => set("source", e.target.value)}>
+        {["Meta Ads","WhatsApp","Walk-in"].map(s => <option key={s}>{s}</option>)}
+      </select>
+      <select className={FIELD} value={form.stage} onChange={e => set("stage", e.target.value)}>
+        {["Lead Created","Call Handling","Followup","Trial Booked"].map(s => <option key={s}>{s}</option>)}
+      </select>
+      <CardBtn disabled={!form.name || !form.phone}
+        onClick={() => { setDone(true); onDone(`✅ Lead "${form.name}" created — ${form.source}, ${form.stage}`); }}>
+        Create Lead →
+      </CardBtn>
+    </CardWrap>
+  );
+};
 
-const NAV_OPTIONS = [
-  { label: "📊 Dashboard", path: "/dashboard" },
-  { label: "🎯 Leads", path: "/leads" },
-  { label: "💼 Deals", path: "/deals" },
-  { label: "📅 Schedule", path: "/meetings" },
-  { label: "📈 Reports", path: "/reports" },
-  { label: "👥 Contacts", path: "/contacts" },
+// ─── Task list card ──────────────────────────────────────
+const TYPE_ICON: Record<string,string> = { followup:"↩", trial:"🥋", renewal:"↺", call:"📞" };
+const PRIO_CLS: Record<string,string> = {
+  high:   "bg-red-500/15 text-red-400",
+  medium: "bg-amber-500/15 text-amber-400",
+  low:    "bg-slate-500/15 text-slate-400",
+};
+const TaskListCard = ({ payload, onNavigate }: { payload: Record<string, unknown>; onNavigate: (p: string) => void }) => {
+  const tasks = payload.tasks as typeof MOCK_TASKS;
+  return (
+    <CardWrap>
+      <CardTitle>✅ Pending Tasks</CardTitle>
+      {tasks.map((t, i) => (
+        <div key={t.id} className={cn("flex items-start gap-2 py-1.5", i < tasks.length - 1 && "border-b border-[var(--border-color)]")}>
+          <span className="mt-0.5 flex-shrink-0 text-sm">{TYPE_ICON[t.type] ?? "◈"}</span>
+          <div className="flex-1 min-w-0">
+            <p className="truncate text-[11px] font-600 text-primary">{t.title}</p>
+            <p className="text-[9px] text-secondary">{t.leadName} · Due {t.dueDate}</p>
+          </div>
+          <span className={cn("flex-shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-700 capitalize", PRIO_CLS[t.priority])}>
+            {t.priority}
+          </span>
+        </div>
+      ))}
+      <CardBtn onClick={() => onNavigate("/dashboard/tasks")}>View all tasks →</CardBtn>
+    </CardWrap>
+  );
+};
+
+// ─── Trial list card ─────────────────────────────────────
+const TrialListCard = ({ payload, onNavigate }: { payload: Record<string, unknown>; onNavigate: (p: string) => void }) => {
+  const trials = payload.trials as typeof MOCK_TRIALS;
+  return (
+    <CardWrap>
+      <CardTitle>🥋 Today's Trials</CardTitle>
+      {trials.map((t, i) => (
+        <div key={t.id} className={cn("flex items-start gap-2 py-1.5", i < trials.length - 1 && "border-b border-[var(--border-color)]")}>
+          <span className="mt-0.5 flex-shrink-0 text-sm">🥋</span>
+          <div className="flex-1 min-w-0">
+            <p className="truncate text-[11px] font-600 text-primary">{t.leadName}</p>
+            <p className="text-[9px] text-secondary">{t.batch} · {t.trainer} · {t.time}</p>
+          </div>
+          <span className={cn("flex-shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-700 capitalize",
+            t.status === "confirmed" ? "success-text success-bg" : "warning-text warning-bg")}>
+            {t.status}
+          </span>
+        </div>
+      ))}
+      <CardBtn onClick={() => onNavigate("/schedule/trials")}>View all trials →</CardBtn>
+    </CardWrap>
+  );
+};
+
+// ─── Quick nav card ──────────────────────────────────────
+const NAV_ITEMS = [
+  { icon:"🏠", label:"Dashboard", path:"/dashboard"  },
+  { icon:"📋", label:"Leads",     path:"/leads"       },
+  { icon:"📅", label:"Schedule",  path:"/schedule"    },
+  { icon:"🔄", label:"Renewals",  path:"/renewals"    },
+  { icon:"📊", label:"Reports",   path:"/reports"     },
+  { icon:"⚙",  label:"Settings", path:"/settings"    },
 ];
+const QuickNavCard = ({ onNavigate }: { onNavigate: (p: string) => void }) => (
+  <CardWrap>
+    <CardTitle>🧭 Quick Navigation</CardTitle>
+    <div className="grid grid-cols-3 gap-1.5">
+      {NAV_ITEMS.map(n => (
+        <button key={n.path} onClick={() => onNavigate(n.path)}
+          className="flex flex-col items-center gap-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-base)] py-2 px-1 transition-all hover:border-[var(--primary-color)] hover:bg-[var(--hover-bg)]">
+          <span className="text-base leading-none">{n.icon}</span>
+          <span className="text-[9px] font-600 text-secondary">{n.label}</span>
+        </button>
+      ))}
+    </div>
+  </CardWrap>
+);
 
-// ─── LocalStorage helpers ─────────────────────────────────────────────────────
-const LS_KEY = "procody_chat_history";
-const saveHistory = (msgs: Message[]) => {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(msgs.slice(-40))); } catch {}
-};
-const loadHistory = (): Message[] => {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch { return []; }
-};
+// ─── Chips + localStorage ────────────────────────────────
+const CHIPS = ["Show analytics", "My leads", "My tasks", "Today's trials", "Renewals"];
+const LS_KEY = "proton_chat_history";
+const saveHistory = (msgs: Message[]) => { try { localStorage.setItem(LS_KEY, JSON.stringify(msgs.slice(-40))); } catch {} };
+const loadHistory = (): Message[] => { try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch { return []; } };
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-const FloatingChatBot = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [isDark, setIsDark] = useState(true);
-  const [messages, setMessages] = useState<Message[]>(() => loadHistory());
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [showOptions, setShowOptions] = useState(false);
-  const [unread, setUnread] = useState(0);
-  const [isListening, setIsListening] = useState(false);
-  const [greeted, setGreeted] = useState(() => loadHistory().length > 0);
-
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<ISpeechRecognition | null>(null);
+// ─── Main component ──────────────────────────────────────
+export const FloatingChatBot = () => {
   const navigate = useNavigate();
+  const user     = useUser();
+  const role     = useRole();
 
-  // Theme tokens
-  const t = isDark ? {
-    bg: "#13161f", header: "linear-gradient(135deg,#1e2035,#252847)",
-    msgBg: "#1e2235", inputBg: "#1a1d2e", inputRow: "#0d0f1a",
-    text: "#e0e4ff", sub: "#4a5568", border: "rgba(99,102,241,0.18)",
-    chipBg: "rgba(99,102,241,0.08)", chipColor: "#818cf8",
-    optBg: "#1a1d2e", optColor: "#a5b4fc", minimizeBg: "#1a1d2e",
-    shadow: "0 32px 80px rgba(0,0,0,0.6)",
-  } : {
-    bg: "#f8f9ff", header: "linear-gradient(135deg,#eef0ff,#e8ebff)",
-    msgBg: "#ffffff", inputBg: "#ffffff", inputRow: "#f0f2ff",
-    text: "#1e2035", sub: "#9ca3af", border: "rgba(99,102,241,0.2)",
-    chipBg: "rgba(99,102,241,0.06)", chipColor: "#6366f1",
-    optBg: "#f0f2ff", optColor: "#4f46e5", minimizeBg: "#eef0ff",
-    shadow: "0 32px 80px rgba(99,102,241,0.12)",
-  };
+  const [isOpen,      setIsOpen]      = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [messages,    setMessages]    = useState<Message[]>(() => loadHistory());
+  const [input,       setInput]       = useState("");
+  const [isTyping,    setIsTyping]    = useState(false);
+  const [unread,      setUnread]      = useState(0);
+  const [isListening, setIsListening] = useState(false);
+  const [greeted,     setGreeted]     = useState(() => loadHistory().length > 0);
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isTyping]);
+  const msgEndRef  = useRef<HTMLDivElement>(null);
+  const inputRef   = useRef<HTMLInputElement>(null);
+  const recRef     = useRef<ISpeechRecognition | null>(null);
+
+  useEffect(() => { msgEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isTyping]);
   useEffect(() => { if (messages.length) saveHistory(messages); }, [messages]);
 
-  const uid = () => Math.random().toString(36).slice(2);
-
-  const addMessage = useCallback((msg: Omit<Message, "id">) => {
-    setMessages(prev => [...prev, { ...msg, id: uid() }]);
+  const uid    = () => Math.random().toString(36).slice(2);
+  const addMsg = useCallback((msg: Omit<Message, "id">) => {
+    setMessages(p => [...p, { ...msg, id: uid() }]);
   }, []);
 
   const handleOpen = () => {
-    setIsOpen(true);
-    setIsMinimized(false);
-    setUnread(0);
+    setIsOpen(true); setIsMinimized(false); setUnread(0);
     if (!greeted) {
       setGreeted(true);
+      const botId = uid();
       setTimeout(() => {
-        const welcomeId = uid();
-        setMessages(prev => [...prev, { id: welcomeId, sender: "bot", text: "", streaming: true }]);
+        setMessages(p => [...p, { id: botId, sender: "bot", text: "", streaming: true }]);
         streamText(
-          "Hey 👋 I'm ProCody, your CRM assistant. I can show analytics, create leads, assign agents, and more. What do you need?",
-          (partial) => setMessages(prev => prev.map(m => m.id === welcomeId ? { ...m, text: partial } : m)),
-          () => {
-            setMessages(prev => prev.map(m => m.id === welcomeId ? { ...m, streaming: false } : m));
-            setShowOptions(true);
-          }
+          `Hey ${user?.name?.split(" ")[0] ?? "there"} 👋  I'm Proton AI. Ask me about leads, analytics, tasks, or use the quick actions below.`,
+          partial => setMessages(p => p.map(m => m.id === botId ? { ...m, text: partial } : m)),
+          ()      => setMessages(p => p.map(m => m.id === botId ? { ...m, streaming: false, card: { type: "quick_nav" } } : m))
         );
-      }, 300);
+      }, 250);
     }
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
+  const doNavigate = (path: string) => { navigate(path); };
+
   const processMessage = async (text: string) => {
     if (!text.trim() || isTyping) return;
-    setInput("");
-    setShowOptions(false);
-    addMessage({ sender: "user", text });
-    setIsTyping(true);
-
-    await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
-
-    const intent = detectIntent(text);
-
-    // Handle navigation intents
-    if (["navigate_dashboard", "navigate_meetings", "navigate_deals"].includes(intent)) {
-      const paths: Record<string, string> = {
-        navigate_dashboard: "/dashboard",
-        navigate_meetings: "/meetings",
-        navigate_deals: "/deals",
-      };
-      const resp = getMockResponse(intent);
-      const botId = uid();
-      setIsTyping(false);
-      setMessages(prev => [...prev, { id: botId, sender: "bot", text: "", streaming: true }]);
-      streamText(resp.text, (p) => setMessages(prev => prev.map(m => m.id === botId ? { ...m, text: p } : m)),
-        () => {
-          setMessages(prev => prev.map(m => m.id === botId ? { ...m, streaming: false } : m));
-          setTimeout(() => navigate(paths[intent]), 800);
-        });
-      return;
-    }
-
-    const resp = getMockResponse(intent);
+    setInput(""); addMsg({ sender: "user", text }); setIsTyping(true);
+    await new Promise(r => setTimeout(r, 450 + Math.random() * 350));
+    const resp  = buildResponse(detectIntent(text), user, role);
     const botId = uid();
     setIsTyping(false);
-    setMessages(prev => [...prev, { id: botId, sender: "bot", text: "", streaming: true, card: resp.card }]);
+    setMessages(p => [...p, { id: botId, sender: "bot", text: "", streaming: true }]);
     streamText(
       resp.text,
-      (partial) => setMessages(prev => prev.map(m => m.id === botId ? { ...m, text: partial } : m)),
-      () => {
-        setMessages(prev => prev.map(m => m.id === botId ? { ...m, streaming: false } : m));
+      partial => setMessages(p => p.map(m => m.id === botId ? { ...m, text: partial } : m)),
+      ()      => {
+        setMessages(p => p.map(m => m.id === botId ? { ...m, streaming: false, card: resp.card } : m));
+        if (resp.navigateTo) setTimeout(() => doNavigate(resp.navigateTo!), 900);
         if (!isOpen) setUnread(n => n + 1);
       }
     );
   };
 
-  const handleCardAction = (msg: string) => {
-    addMessage({ sender: "bot", text: msg });
-  };
-
   const startVoice = () => {
-    const SR: SpeechRecognitionConstructor | undefined =
-      window.SpeechRecognition ?? window.webkitSpeechRecognition;
-    if (!SR) { alert("Voice input not supported in this browser."); return; }
+    const SR = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    if (!SR) { alert("Voice not supported in this browser."); return; }
     const rec: ISpeechRecognition = new SR();
-    rec.lang = "en-IN";
-    rec.interimResults = false;
-    recognitionRef.current = rec;
+    rec.lang = "en-IN"; rec.interimResults = false; recRef.current = rec;
     setIsListening(true);
     rec.onresult = (e: ISpeechRecognitionEvent) => { setInput(e.results[0][0].transcript); setIsListening(false); };
-    rec.onerror = () => setIsListening(false);
-    rec.onend = () => setIsListening(false);
+    rec.onerror  = () => setIsListening(false);
+    rec.onend    = () => setIsListening(false);
     rec.start();
   };
 
   const clearHistory = () => {
-    setMessages([]);
-    setGreeted(false);
-    setShowOptions(false);
+    setMessages([]); setGreeted(false);
     try { localStorage.removeItem(LS_KEY); } catch {}
   };
 
   const renderCard = (card: CardData) => {
     switch (card.type) {
-      case "analytics": return <AnalyticsCard data={MOCK_ANALYTICS} />;
-      case "lead_form": return <LeadFormCard onSubmit={handleCardAction} />;
-      case "assign": return <AssignCard leads={MOCK_LEADS} agents={MOCK_ANALYTICS.agents} onSubmit={handleCardAction} />;
-      case "contact_action": return <ContactActionCard leads={MOCK_LEADS} onSubmit={handleCardAction} />;
-      case "lead_list": return <LeadListCard leads={MOCK_LEADS} />;
-      default: return null;
+      case "analytics":  return <AnalyticsCard  payload={card.payload!} />;
+      case "lead_list":  return <LeadListCard   payload={card.payload!} onNavigate={doNavigate} />;
+      case "lead_form":  return <LeadFormCard   onDone={msg => addMsg({ sender: "bot", text: msg })} />;
+      case "task_list":  return <TaskListCard   payload={card.payload!} onNavigate={doNavigate} />;
+      case "trial_list": return <TrialListCard  payload={card.payload!} onNavigate={doNavigate} />;
+      case "quick_nav":  return <QuickNavCard   onNavigate={doNavigate} />;
+      default:           return null;
     }
   };
 
+  // The only style block: @keyframe definitions Tailwind can't produce.
+  // All layout, colour, spacing, and interaction is plain Tailwind below.
+  const KEYFRAMES = `
+    @keyframes proton-pulse  { 0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--primary-color) 40%,transparent)} 60%{box-shadow:0 0 0 10px transparent} }
+    @keyframes proton-pop    { from{transform:scale(0)} to{transform:scale(1)} }
+    @keyframes proton-in     { from{transform:scale(0.85) translateY(8px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+    @keyframes proton-msg    { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes proton-blink  { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    @keyframes proton-cur    { 0%,100%{opacity:1} 50%{opacity:0} }
+    @keyframes proton-bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px);background:var(--primary-color)} }
+    @keyframes proton-mic    { 0%,100%{opacity:1} 50%{opacity:0.35} }
+    .proton-pulse  { animation: proton-pulse  2.8s ease-in-out infinite; }
+    .proton-pop    { animation: proton-pop    0.25s cubic-bezier(0.34,1.56,0.64,1); }
+    .proton-in     { animation: proton-in     0.22s cubic-bezier(0.34,1.56,0.64,1); }
+    .proton-msg    { animation: proton-msg    0.16s ease-out; }
+    .proton-blink  { animation: proton-blink  2s   ease-in-out infinite; }
+    .proton-cur    { animation: proton-cur    0.55s ease-in-out infinite; }
+    .proton-bounce { animation: proton-bounce 1.1s  ease-in-out infinite; }
+    .proton-bounce:nth-child(2) { animation-delay: 0.18s; }
+    .proton-bounce:nth-child(3) { animation-delay: 0.36s; }
+    .proton-mic    { animation: proton-mic    0.9s  ease-in-out infinite; }
+    .proton-msgs::-webkit-scrollbar       { width: 3px; }
+    .proton-msgs::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+  `;
+
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Space+Mono:wght@400;700&display=swap');
+      <style>{KEYFRAMES}</style>
 
-        .pchat-fab {
-          position:fixed; bottom:24px; right:24px;
-          width:56px; height:56px; border-radius:50%;
-          background:linear-gradient(135deg,#6366f1,#8b5cf6);
-          border:none; cursor:pointer;
-          display:flex; align-items:center; justify-content:center;
-          box-shadow:0 8px 32px rgba(99,102,241,0.45);
-          z-index:1000; transition:transform 0.2s;
-          animation:pchat-pulse 2.5s ease-in-out infinite;
-        }
-        .pchat-fab:hover { transform:scale(1.1); }
-        @keyframes pchat-pulse {
-          0%,100% { box-shadow:0 8px 32px rgba(99,102,241,0.45),0 0 0 0 rgba(99,102,241,0.3); }
-          50%      { box-shadow:0 8px 32px rgba(99,102,241,0.45),0 0 0 12px rgba(99,102,241,0); }
-        }
-        .pchat-badge {
-          position:absolute; top:-3px; right:-3px;
-          background:#ef4444; color:white; border-radius:50%;
-          width:19px; height:19px; font-size:10px; font-weight:700;
-          display:flex; align-items:center; justify-content:center;
-          border:2px solid #0f1117; animation:pchat-badgepop 0.3s cubic-bezier(0.34,1.56,0.64,1);
-          font-family:'DM Sans',sans-serif;
-        }
-        @keyframes pchat-badgepop { from{transform:scale(0)} to{transform:scale(1)} }
-
-        .pchat-win {
-          position:fixed; right:24px;
-          width:370px; border-radius:20px;
-          display:flex; flex-direction:column;
-          z-index:999; overflow:hidden;
-          font-family:'DM Sans',sans-serif;
-          transform-origin:bottom right;
-        }
-        .pchat-win-open {
-          bottom:92px; height:540px;
-          animation:pchat-popin 0.25s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        .pchat-win-min {
-          bottom:92px; height:56px;
-          animation:pchat-popin 0.2s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        @keyframes pchat-popin {
-          from{transform:scale(0.75) translateY(10px);opacity:0}
-          to{transform:scale(1) translateY(0);opacity:1}
-        }
-
-        .pchat-header {
-          padding:13px 16px; display:flex;
-          align-items:center; gap:11px; flex-shrink:0;
-          border-bottom:1px solid rgba(99,102,241,0.12);
-        }
-        .pchat-avatar {
-          width:34px; height:34px; border-radius:10px;
-          background:linear-gradient(135deg,#6366f1,#8b5cf6);
-          display:flex; align-items:center; justify-content:center;
-          font-size:17px; flex-shrink:0;
-        }
-        .pchat-hname {
-          font-family:'Space Mono',monospace;
-          font-size:11.5px; font-weight:700; letter-spacing:0.5px;
-        }
-        .pchat-hstatus {
-          font-size:10.5px; color:#4ade80;
-          display:flex; align-items:center; gap:4px; margin-top:2px;
-        }
-        .pchat-dot {
-          width:6px; height:6px; border-radius:50%; background:#4ade80;
-          animation:pchat-blink 2s ease-in-out infinite;
-        }
-        @keyframes pchat-blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
-        .pchat-hbtn {
-          background:rgba(255,255,255,0.06); border:none; cursor:pointer;
-          width:27px; height:27px; border-radius:7px; font-size:13px;
-          display:flex; align-items:center; justify-content:center;
-          transition:background 0.15s, color 0.15s; color:#8892b0;
-        }
-        .pchat-hbtn:hover { background:rgba(99,102,241,0.15); color:#a5b4fc; }
-        .pchat-hbtn.danger:hover { background:rgba(239,68,68,0.15); color:#f87171; }
-
-        .pchat-messages {
-          flex:1; overflow-y:auto; padding:14px 13px;
-          display:flex; flex-direction:column; gap:10px; scroll-behavior:smooth;
-        }
-        .pchat-messages::-webkit-scrollbar { width:3px; }
-        .pchat-messages::-webkit-scrollbar-thumb { background:rgba(99,102,241,0.25); border-radius:2px; }
-
-        .pchat-msg { display:flex; gap:8px; animation:pchat-msgin 0.18s ease-out; }
-        @keyframes pchat-msgin { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
-        .pchat-msg.user { flex-direction:row-reverse; }
-
-        .pchat-mavatar {
-          width:26px; height:26px; border-radius:7px; flex-shrink:0;
-          display:flex; align-items:center; justify-content:center;
-          font-size:13px; margin-top:2px;
-        }
-        .pchat-msg.bot  .pchat-mavatar { background:linear-gradient(135deg,#6366f1,#8b5cf6); }
-        .pchat-msg.user .pchat-mavatar { background:linear-gradient(135deg,#0ea5e9,#2563eb); }
-
-        .pchat-bubble {
-          max-width:238px; padding:9px 13px; border-radius:14px;
-          font-size:13.5px; line-height:1.55; white-space:pre-wrap;
-        }
-        .pchat-msg.bot .pchat-bubble  { border-bottom-left-radius:4px; }
-        .pchat-msg.user .pchat-bubble {
-          background:linear-gradient(135deg,#4f46e5,#6d28d9) !important;
-          border-bottom-right-radius:4px; color:white !important;
-          border:none !important;
-        }
-
-        .pchat-cursor {
-          display:inline-block; width:2px; height:13px;
-          background:#6366f1; margin-left:2px; vertical-align:middle;
-          animation:pchat-cur 0.6s ease-in-out infinite;
-        }
-        @keyframes pchat-cur { 0%,100%{opacity:1} 50%{opacity:0} }
-
-        .pchat-typing-row { display:flex; gap:8px; }
-        .pchat-typing-bubble {
-          display:flex; gap:4px; align-items:center;
-          padding:10px 13px; border-radius:14px; border-bottom-left-radius:4px;
-        }
-        .pchat-typing-bubble span {
-          width:6px; height:6px; border-radius:50%; background:#4a5568;
-          animation:pchat-bounce 1.2s ease-in-out infinite;
-        }
-        .pchat-typing-bubble span:nth-child(2) { animation-delay:0.2s; }
-        .pchat-typing-bubble span:nth-child(3) { animation-delay:0.4s; }
-        @keyframes pchat-bounce {
-          0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px);background:#6366f1}
-        }
-
-        .pchat-options { padding:0 13px 6px; }
-        .pchat-opt-label {
-          font-size:9.5px; text-transform:uppercase; letter-spacing:1px;
-          color:#3d4462; font-family:'Space Mono',monospace; margin-bottom:5px;
-        }
-        .pchat-opt-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
-        .pchat-opt-btn {
-          border:1px solid rgba(99,102,241,0.2); padding:8px 9px;
-          border-radius:9px; font-size:12px; cursor:pointer; text-align:left;
-          transition:all 0.15s; font-family:'DM Sans',sans-serif;
-        }
-        .pchat-opt-btn:hover { border-color:rgba(99,102,241,0.45); }
-
-        .pchat-chips { display:flex; flex-wrap:wrap; gap:5px; padding:0 13px 8px; }
-        .pchat-chip {
-          border:1px solid rgba(99,102,241,0.18); font-size:11.5px;
-          padding:4px 10px; border-radius:20px; cursor:pointer;
-          transition:all 0.15s; font-family:'DM Sans',sans-serif;
-        }
-        .pchat-chip:hover { border-color:rgba(99,102,241,0.4); }
-
-        .pchat-inputrow {
-          padding:10px 12px; border-top:1px solid rgba(99,102,241,0.1);
-          display:flex; gap:7px; align-items:center; flex-shrink:0;
-        }
-        .pchat-inputwrap {
-          flex:1; border:1px solid rgba(99,102,241,0.18); border-radius:11px;
-          display:flex; align-items:center; padding:0 10px; transition:border-color 0.15s;
-        }
-        .pchat-inputwrap:focus-within { border-color:rgba(99,102,241,0.5); }
-        .pchat-inputwrap input {
-          background:none; border:none; outline:none;
-          font-family:'DM Sans',sans-serif; font-size:13.5px;
-          padding:9px 0; flex:1; width:100%;
-        }
-        .pchat-iconbtn {
-          background:none; border:none; cursor:pointer; padding:4px;
-          display:flex; align-items:center; justify-content:center;
-          border-radius:6px; transition:background 0.15s;
-        }
-        .pchat-iconbtn:hover { background:rgba(99,102,241,0.12); }
-        .pchat-iconbtn.listening { animation:pchat-micpulse 1s ease-in-out infinite; }
-        @keyframes pchat-micpulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        .pchat-send {
-          width:35px; height:35px; border-radius:9px;
-          background:linear-gradient(135deg,#6366f1,#8b5cf6);
-          border:none; cursor:pointer; display:flex;
-          align-items:center; justify-content:center;
-          transition:transform 0.15s, opacity 0.15s; flex-shrink:0;
-        }
-        .pchat-send:hover { transform:scale(1.06); }
-        .pchat-send:disabled { opacity:0.45; cursor:not-allowed; transform:none; }
-      `}</style>
-
-      {/* ── FAB ── */}
+      {/* ── FAB ──────────────────────────────────────── */}
       {!isOpen && (
-        <button className="pchat-fab" onClick={handleOpen} aria-label="Open ProCody AI" style={{ position: "fixed" }}>
+        <button
+          onClick={handleOpen}
+          aria-label="Open Proton AI"
+          className="proton-pulse fixed bottom-6 right-6 z-[1000] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border-none bg-[var(--primary-color)] transition-transform duration-200 hover:scale-110"
+        >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.518 3.66 1.418 5.174L2 22l4.826-1.418A9.956 9.956 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
-            <circle cx="8" cy="12" r="1" fill="white" stroke="none"/>
+            <circle cx="8"  cy="12" r="1" fill="white" stroke="none"/>
             <circle cx="12" cy="12" r="1" fill="white" stroke="none"/>
             <circle cx="16" cy="12" r="1" fill="white" stroke="none"/>
           </svg>
-          {unread > 0 && <span className="pchat-badge">{unread}</span>}
+          {unread > 0 && (
+            <span className="proton-pop absolute -right-0.5 -top-0.5 flex h-[19px] w-[19px] items-center justify-center rounded-full border-2 border-[var(--bg-base)] bg-[var(--danger-color)] text-[10px] font-700 text-white">
+              {unread}
+            </span>
+          )}
         </button>
       )}
 
-      {/* ── Chat Window ── */}
+      {/* ── Chat window ──────────────────────────────── */}
       {isOpen && (
         <div
-          className={`pchat-win ${isMinimized ? "pchat-win-min" : "pchat-win-open"}`}
-          style={{ background: t.bg, border: `1px solid ${t.border}`, boxShadow: t.shadow }}
+          className={cn(
+            "proton-in fixed right-6 z-[999] flex flex-col overflow-hidden rounded-[18px]",
+            "border border-[var(--border-color)] bg-[var(--bg-base)]",
+            "shadow-[0_24px_64px_rgba(0,0,0,0.4)]",
+            "w-[min(360px,calc(100vw-48px))]",
+            isMinimized ? "bottom-[90px] h-[54px]" : "bottom-[90px] h-[min(560px,calc(100dvh-108px))]"
+          )}
+          style={{ transformOrigin: "bottom right" }}
         >
-          {/* Header */}
-          <div className="pchat-header" style={{ background: t.header }}>
-            <div className="pchat-avatar">🤖</div>
-            {!isMinimized && (
-              <div style={{ flex: 1 }}>
-                <div className="pchat-hname" style={{ color: t.text }}>PROCODY AI</div>
-                <div className="pchat-hstatus"><span className="pchat-dot" /> Online · CRM Assistant</div>
+          {/* ── Header ── */}
+          <div className="flex flex-shrink-0 items-center gap-2.5 border-b border-[var(--border-color)] bg-[var(--bg-surface)] px-3.5 py-2.5">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[var(--primary-color)] text-base">
+              🤖
+            </div>
+            {!isMinimized ? (
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-800 tracking-wide text-primary">PROTON AI</p>
+                <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[var(--success-color)]">
+                  <span className="proton-blink h-1.5 w-1.5 rounded-full bg-[var(--success-color)]" />
+                  Online · CRM Assistant
+                </p>
               </div>
+            ) : (
+              <span className="flex-1 text-[13px] font-700 text-primary">Proton AI</span>
             )}
-            {isMinimized && <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: t.text }}>ProCody AI</span>}
-            <div style={{ display: "flex", gap: 5 }}>
-              {/* Dark/Light toggle */}
-              <button className="pchat-hbtn" onClick={() => setIsDark(d => !d)} title="Toggle theme">
-                {isDark ? "☀️" : "🌙"}
-              </button>
-              {/* Clear history */}
+            <div className="flex items-center gap-1.5">
               {!isMinimized && (
-                <button className="pchat-hbtn danger" onClick={clearHistory} title="Clear chat">
+                <button onClick={clearHistory} title="Clear chat"
+                  className="flex h-[26px] w-[26px] cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--hover-bg)] text-[12px] text-secondary transition-all hover:border-[var(--danger-color)] hover:text-[var(--danger-color)]">
                   🗑
                 </button>
               )}
-              {/* Minimize */}
-              <button className="pchat-hbtn" onClick={() => setIsMinimized(m => !m)} title={isMinimized ? "Expand" : "Minimize"}>
+              <button onClick={() => setIsMinimized(m => !m)} title={isMinimized ? "Expand" : "Minimize"}
+                className="flex h-[26px] w-[26px] cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--hover-bg)] text-[11px] text-secondary transition-all hover:border-[var(--primary-color)] hover:text-primary">
                 {isMinimized ? "▲" : "▼"}
               </button>
-              {/* Close */}
-              <button className="pchat-hbtn danger" onClick={() => setIsOpen(false)} title="Close">✕</button>
+              <button onClick={() => setIsOpen(false)} title="Close"
+                className="flex h-[26px] w-[26px] cursor-pointer items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--hover-bg)] text-[11px] text-secondary transition-all hover:border-[var(--danger-color)] hover:text-[var(--danger-color)]">
+                ✕
+              </button>
             </div>
           </div>
 
-          {/* Body — hidden when minimized */}
+          {/* ── Body ── */}
           {!isMinimized && (
             <>
               {/* Messages */}
-              <div className="pchat-messages">
-                {messages.map((msg) => (
-                  <div key={msg.id} className={`pchat-msg ${msg.sender}`}>
-                    <div className="pchat-mavatar">{msg.sender === "bot" ? "🤖" : "👤"}</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 5, maxWidth: 250 }}>
-                      <div
-                        className="pchat-bubble"
-                        style={{
-                          background: msg.sender === "bot" ? t.msgBg : undefined,
-                          color: msg.sender === "bot" ? t.text : undefined,
-                          border: msg.sender === "bot" ? `1px solid ${t.border}` : undefined,
-                        }}
-                      >
+              <div className="proton-msgs flex flex-1 flex-col gap-2.5 overflow-y-auto bg-[var(--bg-base)] p-3">
+                {messages.map(msg => (
+                  <div key={msg.id} className={cn("proton-msg flex gap-2", msg.sender === "user" && "flex-row-reverse")}>
+                    {/* Avatar */}
+                    <div className={cn(
+                      "mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-[7px] text-[11px]",
+                      msg.sender === "bot"
+                        ? "bg-[var(--primary-color)]"
+                        : "border border-[var(--border-color)] bg-[var(--bg-surface)]"
+                    )}>
+                      {msg.sender === "bot" ? "🤖" : (user?.name?.charAt(0) ?? "👤")}
+                    </div>
+                    {/* Bubble + card */}
+                    <div className={cn("flex max-w-[230px] flex-col gap-1", msg.sender === "user" ? "items-end" : "items-start")}>
+                      <div className={cn(
+                        "rounded-[13px] px-3 py-2 text-[13px] leading-relaxed whitespace-pre-wrap",
+                        msg.sender === "bot"
+                          ? "rounded-bl-[4px] border border-[var(--border-color)] bg-[var(--bg-card)] text-primary"
+                          : "rounded-br-[4px] bg-[var(--primary-color)] text-white"
+                      )}>
                         {msg.text}
-                        {msg.streaming && msg.text.length > 0 && <span className="pchat-cursor" />}
+                        {msg.streaming && msg.text.length > 0 && (
+                          <span className="proton-cur ml-0.5 inline-block h-3 w-0.5 align-middle bg-[var(--primary-color)]" />
+                        )}
                       </div>
                       {msg.card && !msg.streaming && renderCard(msg.card)}
                     </div>
                   </div>
                 ))}
 
+                {/* Typing dots */}
                 {isTyping && (
-                  <div className="pchat-typing-row">
-                    <div className="pchat-mavatar" style={{ width: 26, height: 26, borderRadius: 7, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>🤖</div>
-                    <div className="pchat-typing-bubble" style={{ background: t.msgBg, border: `1px solid ${t.border}` }}>
-                      <span /><span /><span />
+                  <div className="flex gap-2">
+                    <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-[7px] bg-[var(--primary-color)] text-[11px]">🤖</div>
+                    <div className="flex items-center gap-1 rounded-[13px] rounded-bl-[4px] border border-[var(--border-color)] bg-[var(--bg-card)] px-3 py-2">
+                      <span className="proton-bounce h-1.5 w-1.5 rounded-full bg-[var(--text-secondary)]" />
+                      <span className="proton-bounce h-1.5 w-1.5 rounded-full bg-[var(--text-secondary)]" />
+                      <span className="proton-bounce h-1.5 w-1.5 rounded-full bg-[var(--text-secondary)]" />
                     </div>
                   </div>
                 )}
-                <div ref={messagesEndRef} />
+                <div ref={msgEndRef} />
               </div>
 
-              {/* Quick Nav Options */}
-              {showOptions && (
-                <div className="pchat-options">
-                  <div className="pchat-opt-label">Navigate to</div>
-                  <div className="pchat-opt-grid">
-                    {NAV_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.path}
-                        className="pchat-opt-btn"
-                        style={{ background: t.optBg, color: t.optColor }}
-                        onClick={() => { setShowOptions(false); navigate(opt.path); }}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Suggestion Chips */}
-              {!showOptions && messages.length > 0 && (
-                <div className="pchat-chips">
-                  {CHIPS.map((c) => (
-                    <span
-                      key={c}
-                      className="pchat-chip"
-                      style={{ background: t.chipBg, color: t.chipColor }}
-                      onClick={() => processMessage(c)}
-                    >
+              {/* Chips */}
+              {messages.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 border-t border-[var(--border-color)] bg-[var(--bg-base)] px-3 py-2">
+                  {CHIPS.map(c => (
+                    <button key={c} onClick={() => processMessage(c)}
+                      className="cursor-pointer rounded-full border border-[var(--border-color)] bg-[var(--bg-surface)] px-2.5 py-1 text-[11px] text-secondary transition-all hover:border-[var(--primary-color)] hover:text-[var(--primary-color)]">
                       {c}
-                    </span>
+                    </button>
                   ))}
                 </div>
               )}
 
-              {/* Input */}
-              <div className="pchat-inputrow" style={{ background: t.inputRow }}>
-                <div className="pchat-inputwrap" style={{ background: t.inputBg }}>
+              {/* Input row */}
+              <div className="flex flex-shrink-0 items-center gap-1.5 border-t border-[var(--border-color)] bg-[var(--bg-surface)] px-2.5 py-2">
+                <div className="flex flex-1 items-center gap-1.5 rounded-[10px] border border-[var(--border-color)] bg-[var(--bg-base)] px-2.5 focus-within:border-[var(--primary-color)] transition-colors">
                   <input
                     ref={inputRef}
                     value={input}
-                    placeholder="Ask ProCody anything..."
+                    placeholder="Ask Proton AI anything..."
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && processMessage(input)}
-                    style={{ color: t.text }}
+                    className="flex-1 border-none bg-transparent py-2 text-[13px] text-primary outline-none placeholder:text-secondary"
                   />
-                  {/* Voice button */}
-                  <button
-                    className={`pchat-iconbtn ${isListening ? "listening" : ""}`}
-                    onClick={startVoice}
-                    title="Voice input"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={isListening ? "#ef4444" : t.sub} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <button onClick={startVoice} title="Voice input"
+                    className={cn(
+                      "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md transition-colors hover:bg-[var(--hover-bg)]",
+                      isListening && "proton-mic"
+                    )}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                      stroke={isListening ? "var(--danger-color)" : "var(--text-secondary)"}
+                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="9" y="2" width="6" height="12" rx="3"/>
                       <path d="M5 10a7 7 0 0014 0M12 19v3M9 22h6"/>
                     </svg>
                   </button>
                 </div>
-                <button className="pchat-send" onClick={() => processMessage(input)} disabled={isTyping || !input.trim()}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <button
+                  onClick={() => processMessage(input)}
+                  disabled={isTyping || !input.trim()}
+                  className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[9px] bg-[var(--primary-color)] transition-all hover:scale-105 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="22" y1="2" x2="11" y2="13"/>
                     <polygon points="22 2 15 22 11 13 2 9 22 2"/>
                   </svg>
