@@ -5,14 +5,10 @@
 // Role protection is handled by a <ProtectedRoute> wrapper.
 // ============================================================
 
-import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { MainLayout } from "../../app/layout/MainLayout";
-import { useIsAuthenticated, useRole } from "../../store/useAuthStore";
-import {
-  MODULE_SIDEBAR,
-  filterByRole,
-  getModuleFromPath,
-} from "../../config/navigationConfig";
+import { useIsAuthenticated  } from "../../store/useAuthStore";
+ 
 import { LoginPage } from "../../features/auth/LoginPage";
 import { UnauthorizedPage } from "../../features/auth/UnauthorizedPage";
 import { AuthGuard } from "./AuthGuard";
@@ -20,10 +16,29 @@ import { RoleGuard } from "./RoleGuard";
 import { DashboardOverview } from "../../features/dashboard/dashboard.index";
 import { LeadsList, LeadsPipeline } from "../../features/leads/LeadsList";
 import { LeadDetail } from "../../features/leads/LeadDetail";
-import { ScheduleCalendar, TrialsPage } from "../../features/schedule/ScheduleCalendar";
-import { LeadReportsPage, ReportsPage, SalesReportsPage, SourceAnalyticsPage, TrialConversionPage } from "../../features/reports/ReportsPage";
+import { ScheduleCalendar } from "../../features/schedule/CalendarPage";
+import { TrialsPage } from "../../features/schedule/ScheduleCalendar";
+import { ReportsPage } from "../../features/reports/ReportsPage";
+import { LeadReportsPage } from "../../features/reports/LeadReportsPage";
+import { SalesReportsPage } from "../../features/reports/SalesReportsPage";
+import { TrialConversionPage } from "../../features/reports/TrialConversionPage";
+import { SourceAnalyticsPage } from "../../features/reports/SourceAnalyticsPage";
 import { RolesPage, UsersListPage } from "../../features/users/UsersPage";
 import { GeneralSettings, IntegrationsSettings, LeadStagesSettings, MetaAdsSettings, SecuritySettings, WhatsAppSettings } from "../../features/settings/SettingsPage";
+import { LapsedMembersPage } from "../../features/renewals/LapsedMembersPage";
+import { RevenueSummaryPage } from "../../features/renewals/RevenueSummaryPage";
+import { RenewedMembersPage } from "../../features/renewals/RenewedMembersPage";
+import { DueRenewalsPage } from "../../features/renewals/DueRenewalsPage";
+import { RenewalsOverviewPage } from "../../features/renewals/RenewalsOverviewPage";
+import { MyTasksPage } from "../../features/dashboard/pages/MyTasksPage";
+import { NotificationsPage } from "../../features/dashboard/pages/NotificationsPage";
+import { LeadSourcesPage } from "../../features/leads/LeadSourcesPage";
+import { ImportLeadsPage } from "../../features/leads/ImportLeadsPage";
+import { MyLeadsPage } from "../../features/leads/MyLeadsPage";
+import { InviteUserPage } from "../../features/users/InviteUserPage";
+import { ActivityLogPage } from "../../features/users/ActivityLogPage";
+import { FollowUpsPage } from "../../features/schedule/FollowUpsPage";
+import { BatchSchedulePage } from "../../features/schedule/BatchSchedulePage";
 
 // ─────────────────────────────────────────────
 // PROTECTED ROUTE WRAPPER
@@ -43,71 +58,71 @@ const RootRedirect = () => {
 // PLACEHOLDER PAGE — used for all route pages
 // In production: replace with real feature components
 // ─────────────────────────────────────────────
-const PlaceholderPage = ({
-  title,
-  description,
-}: {
-  title: string;
-  description?: string;
-}) => {
-  const role = useRole();
-  const location = useLocation();
-  const activeModule = getModuleFromPath(location.pathname);
-  const sidebarItems = filterByRole(MODULE_SIDEBAR[activeModule] ?? [], role);
+// const PlaceholderPage = ({
+//   title,
+//   description,
+// }: {
+//   title: string;
+//   description?: string;
+// }) => {
+//   const role = useRole();
+//   const location = useLocation();
+//   const activeModule = getModuleFromPath(location.pathname);
+//   const sidebarItems = filterByRole(MODULE_SIDEBAR[activeModule] ?? [], role);
 
-  return (
-    <div className="p-8 max-w-4xl">
-      {/* Page header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white tracking-tight">{title}</h1>
-        {description && (
-          <p className="mt-1 text-[14px] text-[#7a8db8]">{description}</p>
-        )}
-      </div>
+//   return (
+//     <div className="p-8 max-w-4xl">
+//       {/* Page header */}
+//       <div className="mb-8">
+//         <h1 className="text-2xl font-bold text-white tracking-tight">{title}</h1>
+//         {description && (
+//           <p className="mt-1 text-[14px] text-[#7a8db8]">{description}</p>
+//         )}
+//       </div>
 
-      {/* Route info card (dev utility) */}
-      <div className="bg-[#0d1526] border border-[#1e2f52] rounded-xl p-5 mb-6">
-        <p className="text-[11px] text-[#4a5a7a] font-semibold uppercase tracking-wider mb-3">
-          Current Route Context
-        </p>
-        <div className="space-y-1.5">
-          <div className="flex gap-3">
-            <span className="text-[12px] text-[#4a5a7a] w-28">Pathname</span>
-            <span className="text-[12px] text-indigo-400 font-mono">{location.pathname}</span>
-          </div>
-          <div className="flex gap-3">
-            <span className="text-[12px] text-[#4a5a7a] w-28">Active Module</span>
-            <span className="text-[12px] text-emerald-400 font-mono">{activeModule}</span>
-          </div>
-          <div className="flex gap-3">
-            <span className="text-[12px] text-[#4a5a7a] w-28">Your Role</span>
-            <span className="text-[12px] text-amber-400 font-mono">{role}</span>
-          </div>
-          <div className="flex gap-3">
-            <span className="text-[12px] text-[#4a5a7a] w-28">Sidebar Items</span>
-            <span className="text-[12px] text-white font-mono">
-              {sidebarItems.map((i) => i.label).join(", ") || "None"}
-            </span>
-          </div>
-        </div>
-      </div>
+//       {/* Route info card (dev utility) */}
+//       <div className="bg-[#0d1526] border border-[#1e2f52] rounded-xl p-5 mb-6">
+//         <p className="text-[11px] text-[#4a5a7a] font-semibold uppercase tracking-wider mb-3">
+//           Current Route Context
+//         </p>
+//         <div className="space-y-1.5">
+//           <div className="flex gap-3">
+//             <span className="text-[12px] text-[#4a5a7a] w-28">Pathname</span>
+//             <span className="text-[12px] text-indigo-400 font-mono">{location.pathname}</span>
+//           </div>
+//           <div className="flex gap-3">
+//             <span className="text-[12px] text-[#4a5a7a] w-28">Active Module</span>
+//             <span className="text-[12px] text-emerald-400 font-mono">{activeModule}</span>
+//           </div>
+//           <div className="flex gap-3">
+//             <span className="text-[12px] text-[#4a5a7a] w-28">Your Role</span>
+//             <span className="text-[12px] text-amber-400 font-mono">{role}</span>
+//           </div>
+//           <div className="flex gap-3">
+//             <span className="text-[12px] text-[#4a5a7a] w-28">Sidebar Items</span>
+//             <span className="text-[12px] text-white font-mono">
+//               {sidebarItems.map((i) => i.label).join(", ") || "None"}
+//             </span>
+//           </div>
+//         </div>
+//       </div>
 
-      {/* Dummy content grid */}
-      <div className="grid grid-cols-3 gap-4">
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="bg-[#0d1526] border border-[#1e2f52] rounded-xl p-5 hover:border-[#2d4a80] transition-colors"
-          >
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 mb-3" />
-            <div className="h-3 bg-[#1e2f52] rounded w-3/4 mb-2" />
-            <div className="h-2.5 bg-[#1e2f52] rounded w-1/2" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+//       {/* Dummy content grid */}
+//       <div className="grid grid-cols-3 gap-4">
+//         {[1, 2, 3].map((i) => (
+//           <div
+//             key={i}
+//             className="bg-[#0d1526] border border-[#1e2f52] rounded-xl p-5 hover:border-[#2d4a80] transition-colors"
+//           >
+//             <div className="w-8 h-8 rounded-lg bg-indigo-500/10 mb-3" />
+//             <div className="h-3 bg-[#1e2f52] rounded w-3/4 mb-2" />
+//             <div className="h-2.5 bg-[#1e2f52] rounded w-1/2" />
+//           </div>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// };
 
 // ─────────────────────────────────────────────
 // ROUTER DEFINITION
@@ -147,7 +162,7 @@ export const router = createBrowserRouter([
         path: "/dashboard/tasks",
         element: (
           <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "RM","FM","TRAINING_MANAGER"]}>
-            <PlaceholderPage title="My Tasks" description="Pending actions assigned to you." />
+            <MyTasksPage/>
           </RoleGuard >
         ),
       },
@@ -155,7 +170,7 @@ export const router = createBrowserRouter([
         path: "/dashboard/notifications",
         element: (
           <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "RM","FM","TRAINING_MANAGER","HR"]}>
-            <PlaceholderPage title="Notifications" />
+            <NotificationsPage/>
           </RoleGuard >
         ),
       },
@@ -181,7 +196,7 @@ export const router = createBrowserRouter([
         path: "/leads/mine",
         element: (
           <RoleGuard  allowedRoles={["RM","SUPER_ADMIN"]}>
-            <PlaceholderPage title="My Leads" description="Leads assigned to you." />
+            <MyLeadsPage />
           </RoleGuard >
         ),
       },
@@ -197,7 +212,7 @@ export const router = createBrowserRouter([
         path: "/leads/sources",
         element: (
           <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN"]}>
-            <PlaceholderPage title="Lead Sources" />
+            <LeadSourcesPage />
           </RoleGuard >
         ),
       },
@@ -205,7 +220,7 @@ export const router = createBrowserRouter([
         path: "/leads/import",
         element: (
           <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN", "CENTER_MANAGER"]}>
-            <PlaceholderPage title="Import Leads" />
+            <ImportLeadsPage />
           </RoleGuard >
         ),
       },
@@ -231,7 +246,7 @@ export const router = createBrowserRouter([
         path: "/schedule/followups",
         element: (
           <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN", "CENTER_MANAGER", "RM"]}>
-            <PlaceholderPage title="Follow-ups" />
+            <FollowUpsPage />
           </RoleGuard >
         ),
       },
@@ -239,7 +254,7 @@ export const router = createBrowserRouter([
         path: "/schedule/batches",
         element: (
           <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN", "CENTER_MANAGER", "TRAINING_MANAGER"]}>
-            <PlaceholderPage title="Batch Schedule" />
+            <BatchSchedulePage />
           </RoleGuard >
         ),
       },
@@ -249,7 +264,15 @@ export const router = createBrowserRouter([
         path: "/renewals",
         element: (
           <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM", "CENTER_MANAGER"]}>
-            <PlaceholderPage title="Due Renewals" />
+            <RenewalsOverviewPage/>
+          </RoleGuard >
+        ),
+      },
+      {
+        path: "/renewals/due",
+        element: (
+          <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM", "CENTER_MANAGER"]}>
+            <DueRenewalsPage/>
           </RoleGuard >
         ),
       },
@@ -257,7 +280,7 @@ export const router = createBrowserRouter([
         path: "/renewals/completed",
         element: (
           <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM", "CENTER_MANAGER"]}>
-            <PlaceholderPage title="Renewed Members" />
+            <RenewedMembersPage/>
           </RoleGuard >
         ),
       },
@@ -265,7 +288,7 @@ export const router = createBrowserRouter([
         path: "/renewals/lapsed",
         element: (
           <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","FM", "CENTER_MANAGER"]}>
-            <PlaceholderPage title="Lapsed Members" />
+            <LapsedMembersPage />
           </RoleGuard >
         ),
       },
@@ -273,7 +296,7 @@ export const router = createBrowserRouter([
         path: "/renewals/revenue",
         element: (
           <RoleGuard  allowedRoles={["SUPER_ADMIN","FM"]}>
-            <PlaceholderPage title="Revenue Summary" />
+            <RevenueSummaryPage/>
           </RoleGuard >
         ),
       },
@@ -303,7 +326,7 @@ export const router = createBrowserRouter([
           </RoleGuard >
         ),
       },
-      {
+      { 
         path: "/reports/trials",
         element: (
           <RoleGuard  allowedRoles={["SUPER_ADMIN","ADMIN","TRAINING_MANAGER", "CENTER_MANAGER"]}>
@@ -341,7 +364,7 @@ export const router = createBrowserRouter([
         path: "/users/invite",
         element: (
           <RoleGuard  allowedRoles={["SUPER_ADMIN", "CENTER_MANAGER"]}>
-            <PlaceholderPage title="Invite User" />
+            <InviteUserPage />
           </RoleGuard >
         ),
       },
@@ -349,7 +372,7 @@ export const router = createBrowserRouter([
         path: "/users/activity",
         element: (
           <RoleGuard  allowedRoles={["SUPER_ADMIN"]}>
-            <PlaceholderPage title="Activity Log" />
+            <ActivityLogPage />
           </RoleGuard >
         ),
       },

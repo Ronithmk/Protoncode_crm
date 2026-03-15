@@ -15,16 +15,45 @@ import type {
 
 // ─── LEADS ───────────────────────────────────────────────
 export const MOCK_LEADS: Lead[] = [
-  { id:"L001", name:"Arjun Mehta",     phone:"+91 98765 43210", email:"arjun@email.com",  source:"Meta Ads", stage:"Trial Booked",      assignedTo:"Priya R",  assignedToId:"U002", center:"Koramangala", createdAt:"2025-02-20", lastActivity:"2025-02-25", trialDate:"2025-02-28", tags:["Hot","BJJ"] },
-  { id:"L002", name:"Sneha Kapoor",    phone:"+91 87654 32109", email:"sneha@email.com",  source:"WhatsApp", stage:"Call Handling",      assignedTo:"Ravi K",   assignedToId:"U003", center:"Indiranagar",  createdAt:"2025-02-22", lastActivity:"2025-02-26", tags:["New"] },
-  { id:"L003", name:"Dev Sharma",      phone:"+91 76543 21098", email:"dev@email.com",    source:"Walk-in",  stage:"Joined",             assignedTo:"Priya R",  assignedToId:"U002", center:"Koramangala", createdAt:"2025-02-18", lastActivity:"2025-02-24", membershipPlan:"Monthly",  membershipStart:"2025-02-25", membershipEnd:"2025-03-25", totalRevenue:2500 },
-  { id:"L004", name:"Ananya Singh",    phone:"+91 65432 10987", email:"ananya@email.com", source:"Meta Ads", stage:"Membership Active",  assignedTo:"Ravi K",   assignedToId:"U003", center:"Whitefield",   createdAt:"2025-02-15", lastActivity:"2025-02-23", membershipPlan:"Quarterly",membershipStart:"2025-02-16", membershipEnd:"2025-05-16", totalRevenue:6500 },
-  { id:"L005", name:"Rohit Verma",     phone:"+91 54321 09876", email:"rohit@email.com",  source:"WhatsApp", stage:"Renewal",            assignedTo:"Priya R",  assignedToId:"U002", center:"Koramangala", createdAt:"2025-02-10", lastActivity:"2025-02-22", membershipPlan:"Annual",   membershipStart:"2025-02-11", membershipEnd:"2026-02-11", totalRevenue:18000 },
-  { id:"L006", name:"Meera Nair",      phone:"+91 43210 98765", email:"meera@email.com",  source:"Walk-in",  stage:"Followup",           assignedTo:"Ravi K",   assignedToId:"U003", center:"Indiranagar",  createdAt:"2025-02-24", lastActivity:"2025-02-27", tags:["Interested"] },
-  { id:"L007", name:"Kabir Khan",      phone:"+91 32109 87654", email:"kabir@email.com",  source:"Meta Ads", stage:"Lead Created",        assignedTo:"Priya R",  assignedToId:"U002", center:"Whitefield",   createdAt:"2025-02-25", lastActivity:"2025-02-25", tags:["New","MMA"] },
-  { id:"L008", name:"Pooja Iyer",      phone:"+91 21098 76543", email:"pooja@email.com",  source:"WhatsApp", stage:"Trial Done",          assignedTo:"Ravi K",   assignedToId:"U003", center:"Koramangala", createdAt:"2025-02-21", lastActivity:"2025-02-26" },
-  { id:"L009", name:"Vikram Negi",     phone:"+91 11987 65432", email:"vikram@email.com", source:"Meta Ads", stage:"Membership Active",  assignedTo:"Priya R",  assignedToId:"U002", center:"Indiranagar",  createdAt:"2025-02-14", lastActivity:"2025-02-20", membershipPlan:"Half-Yearly", totalRevenue:11000 },
-  { id:"L010", name:"Divya Pillai",    phone:"+91 10876 54321", email:"divya@email.com",  source:"Walk-in",  stage:"Call Handling",       assignedTo:"Ravi K",   assignedToId:"U003", center:"Whitefield",   createdAt:"2025-02-26", lastActivity:"2025-02-27", tags:["New"] },
+{ id:"L001", name:"Arjun Mehta", phone:"+919876543210", email:"arjun@email.com", source:"Meta Ads", stage:"Trial Booked", assignedTo:"Priya R", assignedToId:"U002", center:"Koramangala", createdAt:"2025-02-20 10:30", lastActivity:"2025-02-25 12:10", trialDate:"2025-02-28 18:00", tags:["Hot","BJJ"] },
+
+{ id:"L002", name:"Sneha Kapoor", phone:"+918765432109", email:"sneha@email.com", source:"WhatsApp", stage:"Call Handling", assignedTo:"Ravi K", assignedToId:"U003", center:"Indiranagar", createdAt:"2025-02-22 09:15", lastActivity:"2025-02-26 11:40", tags:["New"] },
+
+{ id:"L003", name:"Dev Sharma", phone:"+917654321098", email:"dev@email.com", source:"Walk-in", stage:"Joined", assignedTo:"Priya R", assignedToId:"U002", center:"Koramangala", createdAt:"2025-02-18 14:20", lastActivity:"2025-02-24 16:00", membershipPlan:"Monthly", membershipStart:"2025-02-25 08:00", membershipEnd:"2025-03-25 08:00", totalRevenue:2500 },
+
+{ id:"L004", name:"Ananya Singh", phone:"+916543210987", email:"ananya@email.com", source:"Meta Ads", stage:"Membership Active", assignedTo:"Ravi K", assignedToId:"U003", center:"Whitefield", createdAt:"2025-02-15 13:45", lastActivity:"2025-02-23 15:30", membershipPlan:"Quarterly", membershipStart:"2025-02-16 09:00", membershipEnd:"2025-05-16 09:00", totalRevenue:6500 },
+
+{ id:"L005", name:"Rohit Verma", phone:"+915432109876", email:"rohit@email.com", source:"WhatsApp", stage:"Renewal", assignedTo:"Priya R", assignedToId:"U002", center:"Koramangala", createdAt:"2025-02-10 08:30", lastActivity:"2025-02-22 17:10", membershipPlan:"Annual", membershipStart:"2025-02-11 08:00", membershipEnd:"2026-02-11 08:00", totalRevenue:18000 },
+
+{ id:"L006", name:"Meera Nair", phone:"+914321098765", email:"meera@email.com", source:"Walk-in", stage:"Followup", assignedTo:"Ravi K", assignedToId:"U003", center:"Indiranagar", createdAt:"2025-02-24 11:25", lastActivity:"2025-02-27 14:10", tags:["Interested"] },
+
+{ id:"L007", name:"Kabir Khan", phone:"+913210987654", email:"kabir@email.com", source:"Meta Ads", stage:"Lead Created", assignedTo:"Priya R", assignedToId:"U002", center:"Whitefield", createdAt:"2025-02-25 10:05", lastActivity:"2025-02-25 10:05", tags:["New","MMA"] },
+
+{ id:"L008", name:"Pooja Iyer", phone:"+912109876543", email:"pooja@email.com", source:"WhatsApp", stage:"Trial Done", assignedTo:"Ravi K", assignedToId:"U003", center:"Koramangala", createdAt:"2025-02-21 16:30", lastActivity:"2025-02-26 18:00" },
+
+{ id:"L009", name:"Vikram Negi", phone:"+911198765432", email:"vikram@email.com", source:"Meta Ads", stage:"Membership Active", assignedTo:"Priya R", assignedToId:"U002", center:"Indiranagar", createdAt:"2025-02-14 09:50", lastActivity:"2025-02-20 12:00", membershipPlan:"Half-Yearly", totalRevenue:11000 },
+
+{ id:"L010", name:"Divya Pillai", phone:"+911087654321", email:"divya@email.com", source:"Walk-in", stage:"Call Handling", assignedTo:"Ravi K", assignedToId:"U003", center:"Whitefield", createdAt:"2025-02-26 15:10", lastActivity:"2025-02-27 17:20", tags:["New"] },
+
+{ id:"L011", name:"Rahul Shetty", phone:"+919812345678", email:"rahul@email.com", source:"Meta Ads", stage:"Followup", assignedTo:"Priya R", assignedToId:"U002", center:"Indiranagar", createdAt:"2025-02-19 10:00", lastActivity:"2025-02-23 13:10", tags:["Warm"] },
+
+{ id:"L012", name:"Neha Agarwal", phone:"+918923456789", email:"neha@email.com", source:"WhatsApp", stage:"Trial Booked", assignedTo:"Ravi K", assignedToId:"U003", center:"Koramangala", createdAt:"2025-02-23 11:40", lastActivity:"2025-02-25 12:45", trialDate:"2025-02-27 17:30", tags:["Yoga"] },
+
+{ id:"L013", name:"Amit Kulkarni", phone:"+917934567890", email:"amit@email.com", source:"Walk-in", stage:"Trial Done", assignedTo:"Priya R", assignedToId:"U002", center:"Whitefield", createdAt:"2025-02-17 18:10", lastActivity:"2025-02-22 19:00", tags:["Gym"] },
+
+{ id:"L014", name:"Priyanka Das", phone:"+916945678901", email:"priyanka@email.com", source:"Meta Ads", stage:"Lead Created", assignedTo:"Ravi K", assignedToId:"U003", center:"Indiranagar", createdAt:"2025-02-26 09:30", lastActivity:"2025-02-26 09:30", tags:["New"] },
+
+{ id:"L015", name:"Siddharth Rao", phone:"+915956789012", email:"sid@email.com", source:"WhatsApp", stage:"Membership Active", assignedTo:"Priya R", assignedToId:"U002", center:"Koramangala", createdAt:"2025-02-12 08:20", lastActivity:"2025-02-18 10:00", membershipPlan:"Monthly", totalRevenue:2500 },
+
+{ id:"L016", name:"Kiran Patil", phone:"+914967890123", email:"kiran@email.com", source:"Meta Ads", stage:"Call Handling", assignedTo:"Ravi K", assignedToId:"U003", center:"Whitefield", createdAt:"2025-02-24 14:40", lastActivity:"2025-02-27 15:00", tags:["New"] },
+
+{ id:"L017", name:"Manish Gupta", phone:"+913978901234", email:"manish@email.com", source:"Walk-in", stage:"Trial Booked", assignedTo:"Priya R", assignedToId:"U002", center:"Indiranagar", createdAt:"2025-02-21 12:10", lastActivity:"2025-02-25 14:00", trialDate:"2025-02-28 19:00", tags:["MMA"] },
+
+{ id:"L018", name:"Ritika Sen", phone:"+912989012345", email:"ritika@email.com", source:"Meta Ads", stage:"Followup", assignedTo:"Ravi K", assignedToId:"U003", center:"Koramangala", createdAt:"2025-02-23 16:20", lastActivity:"2025-02-26 17:10", tags:["Warm"] },
+
+{ id:"L019", name:"Varun Nair", phone:"+911990123456", email:"varun@email.com", source:"WhatsApp", stage:"Trial Done", assignedTo:"Priya R", assignedToId:"U002", center:"Whitefield", createdAt:"2025-02-20 13:10", lastActivity:"2025-02-25 16:40", tags:["Gym"] },
+
+{ id:"L020", name:"Shreya Bhat", phone:"+919001234567", email:"shreya@email.com", source:"Meta Ads", stage:"Lead Created", assignedTo:"Ravi K", assignedToId:"U003", center:"Indiranagar", createdAt:"2025-02-27 10:50", lastActivity:"2025-02-27 10:50", tags:["New"] },
 ];
 
 // ─── TIMELINE ENTRIES ─────────────────────────────────────

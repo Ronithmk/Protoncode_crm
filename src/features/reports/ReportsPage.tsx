@@ -226,10 +226,3 @@ export const ReportsPage = () => {
     </div>
   );
 };
-
-// ─── SUB-PAGES (thin wrappers reusing the same components) ──
-
-export const LeadReportsPage  = () => <ReportsPage />;
-export const SalesReportsPage = () => <ReportsPage />;
-export const TrialConversionPage = () => <ReportsPage />;
-export const SourceAnalyticsPage = () => <ReportsPage />;

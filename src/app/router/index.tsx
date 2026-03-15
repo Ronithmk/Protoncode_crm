@@ -13,15 +13,12 @@ import { LeadsList, LeadsPipeline } from "../../features/leads/LeadsList";
 import { LeadDetail } from "../../features/leads/LeadDetail";
 
 // Schedule
-import { ScheduleCalendar, TrialsPage } from "../../features/schedule/ScheduleCalendar";
+import {  TrialsPage } from "../../features/schedule/ScheduleCalendar";
 
 // Reports
 import {
   ReportsPage,
-  LeadReportsPage,
-  SalesReportsPage,
-  TrialConversionPage,
-  SourceAnalyticsPage,
+ 
 } from "../../features/reports/ReportsPage";
 
 // Users
@@ -65,7 +62,6 @@ export const router = createBrowserRouter([
       { path: "/leads/import",   element: <Placeholder title="Import Leads" /> },
 
       // ── Schedule ───────────────────────────────────────
-      { path: "/schedule",           element: <ScheduleCalendar /> },
       { path: "/schedule/trials",    element: <TrialsPage /> },
       { path: "/schedule/followups", element: <Placeholder title="Follow-ups" /> },
       { path: "/schedule/batches",   element: <Placeholder title="Batch Schedule" /> },
@@ -78,10 +74,7 @@ export const router = createBrowserRouter([
 
       // ── Reports ────────────────────────────────────────
       { path: "/reports",          element: <ReportsPage /> },
-      { path: "/reports/leads",    element: <LeadReportsPage /> },
-      { path: "/reports/sales",    element: <SalesReportsPage /> },
-      { path: "/reports/trials",   element: <TrialConversionPage /> },
-      { path: "/reports/sources",  element: <SourceAnalyticsPage /> },
+     
 
       // ── Users ──────────────────────────────────────────
       { path: "/users",          element: <UsersListPage /> },

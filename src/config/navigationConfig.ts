@@ -209,9 +209,16 @@ export const MODULE_SIDEBAR: ModuleSidebarMap = {
 
   renewals: [
     {
+      id: "overview",
+      label: "Overview",
+      path: "/renewals",
+      icon: "LayoutDashboard",
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "FM"],
+    },
+    {
       id: "due-renewals",
       label: "Due Renewals",
-      path: "/renewals",
+      path: "/renewals/due",
       icon: "AlertCircle",
       roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "FM"],
     },
@@ -240,6 +247,13 @@ export const MODULE_SIDEBAR: ModuleSidebarMap = {
   ],
 
   reports: [
+     {
+      id: "reports",
+      label: "Overview",
+      path: "/reports",
+      icon: "Activity",
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "FM"],
+    },
     {
       id: "lead-reports",
       label: "Lead Reports",
