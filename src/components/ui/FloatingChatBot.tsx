@@ -1,7 +1,33 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── SpeechRecognition types (not in lib.dom.d.ts by default) ────────────────
+interface ISpeechRecognition extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  onresult: ((e: ISpeechRecognitionEvent) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
+interface ISpeechRecognitionEvent {
+  results: { 0: { 0: { transcript: string } } };
+}
+
+interface SpeechRecognitionConstructor {
+  new (): ISpeechRecognition;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
+
+
 type Sender = "user" | "bot";
 type CardType = "analytics" | "lead_form" | "assign" | "contact_action" | "lead_list";
 
@@ -60,7 +86,7 @@ function detectIntent(text: string): string {
 }
 
 // ─── Mock Response Generator ──────────────────────────────────────────────────
-function getMockResponse(intent: string, text: string): { text: string; card?: CardData } {
+function getMockResponse(intent: string): { text: string; card?: CardData } {
   switch (intent) {
     case "analytics":
       return {
@@ -322,7 +348,7 @@ const FloatingChatBot = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const navigate = useNavigate();
 
   // Theme tokens
@@ -391,7 +417,7 @@ const FloatingChatBot = () => {
         navigate_meetings: "/meetings",
         navigate_deals: "/deals",
       };
-      const resp = getMockResponse(intent, text);
+      const resp = getMockResponse(intent);
       const botId = uid();
       setIsTyping(false);
       setMessages(prev => [...prev, { id: botId, sender: "bot", text: "", streaming: true }]);
@@ -403,7 +429,7 @@ const FloatingChatBot = () => {
       return;
     }
 
-    const resp = getMockResponse(intent, text);
+    const resp = getMockResponse(intent);
     const botId = uid();
     setIsTyping(false);
     setMessages(prev => [...prev, { id: botId, sender: "bot", text: "", streaming: true, card: resp.card }]);
@@ -422,14 +448,15 @@ const FloatingChatBot = () => {
   };
 
   const startVoice = () => {
-    const SR = (window as Window & { SpeechRecognition?: typeof SpeechRecognition; webkitSpeechRecognition?: typeof SpeechRecognition }).SpeechRecognition || (window as Window & { SpeechRecognition?: typeof SpeechRecognition; webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition;
-    if (!SR) return alert("Voice input not supported in this browser.");
-    const rec = new SR();
+    const SR: SpeechRecognitionConstructor | undefined =
+      window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    if (!SR) { alert("Voice input not supported in this browser."); return; }
+    const rec: ISpeechRecognition = new SR();
     rec.lang = "en-IN";
     rec.interimResults = false;
     recognitionRef.current = rec;
     setIsListening(true);
-    rec.onresult = (e: SpeechRecognitionEvent) => { setInput(e.results[0][0].transcript); setIsListening(false); };
+    rec.onresult = (e: ISpeechRecognitionEvent) => { setInput(e.results[0][0].transcript); setIsListening(false); };
     rec.onerror = () => setIsListening(false);
     rec.onend = () => setIsListening(false);
     rec.start();
@@ -442,7 +469,7 @@ const FloatingChatBot = () => {
     try { localStorage.removeItem(LS_KEY); } catch {}
   };
 
-  const renderCard = (card: CardData, msgId: string) => {
+  const renderCard = (card: CardData) => {
     switch (card.type) {
       case "analytics": return <AnalyticsCard data={MOCK_ANALYTICS} />;
       case "lead_form": return <LeadFormCard onSubmit={handleCardAction} />;
@@ -712,7 +739,7 @@ const FloatingChatBot = () => {
                         {msg.text}
                         {msg.streaming && msg.text.length > 0 && <span className="pchat-cursor" />}
                       </div>
-                      {msg.card && !msg.streaming && renderCard(msg.card, msg.id)}
+                      {msg.card && !msg.streaming && renderCard(msg.card)}
                     </div>
                   </div>
                 ))}
