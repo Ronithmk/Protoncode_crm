@@ -12,7 +12,7 @@ export default function TicketForm({ refresh }: any) {
       id: Date.now().toString(),
       title,
       description,
-      status: "OPEN",
+      status: "NEW",
       createdAt: new Date().toISOString(),
     });
 

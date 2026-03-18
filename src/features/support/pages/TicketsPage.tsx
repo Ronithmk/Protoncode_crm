@@ -308,8 +308,7 @@ export default function TicketsPage() {
                 {filtered.map(t => {
                   // ✅ FIX: safe comments with fallback
                   const comments = t.comments || [];
-                  const sCfg = STATUS_CFG[t.status as keyof typeof STATUS_CFG] ?? STATUS_CFG.NEW;
-                  const pCfg = PRIORITY_CFG[t.priority as keyof typeof PRIORITY_CFG] ?? PRIORITY_CFG.MEDIUM;
+
                   return (
                     <tr key={t.id} className="tk-row" style={{ transition: "background 0.12s" }}>
 

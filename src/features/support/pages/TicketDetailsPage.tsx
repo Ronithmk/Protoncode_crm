@@ -7,7 +7,7 @@ import { useRole } from "../../../store/useAuthStore";
 export default function TicketDetailsPage() {
   const { id } = useParams();
   const role = useRole();
-  const [refresh, setRefresh] = useState(0);
+  const [, setRefresh] = useState(0);
 
   const ticket = getTickets().find((t) => t.id === id);
 
