@@ -175,7 +175,7 @@ export const LoginPage = () => {
     <div className="min-h-screen bg-card flex items-center justify-center p-4 overflow-hidden relative">
       {/* Background glow */}
 
-      <LoginHeader  />
+      <LoginHeader />
 
       <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-radial-indigo pointer-events-none"
         style={{ background:"radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 65%)" }} />
@@ -234,9 +234,21 @@ export const LoginPage = () => {
             ))}
           </div>
 
-          <p className="relative text-[11px] text-secondary">
-            © 2025 Dojo Martial Arts · All rights reserved
-          </p>
+          {/* ✅ ADDED: Member support link in bottom-left of branding panel */}
+          <div className="relative flex items-center justify-between">
+            <p className="text-[11px] text-secondary">
+              © 2025 Dojo Martial Arts · All rights reserved
+            </p>
+            <a
+              href="/member-support"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors"
+            >
+              <span>🎫</span>
+              <span>Member Support</span>
+            </a>
+          </div>
         </div>
 
         {/* ── RIGHT: Login form ── */}
@@ -342,6 +354,20 @@ export const LoginPage = () => {
               <p className="text-[11px] text-secondary">{ROLE_META[selectedAccount.role].desc}</p>
             </div>
           )}
+
+          {/* ✅ ADDED: Member support link at bottom of form panel */}
+          <div className="mt-6 pt-5 border-t border-theme flex items-center justify-center gap-2">
+            <span className="text-[11px] text-secondary">Are you a member?</span>
+            <a
+              href="/member-support"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+            >
+              <span>🎫</span>
+              <span>Submit a support ticket</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>

@@ -39,6 +39,10 @@ import { InviteUserPage } from "../../features/users/InviteUserPage";
 import { ActivityLogPage } from "../../features/users/ActivityLogPage";
 import { FollowUpsPage } from "../../features/schedule/FollowUpsPage";
 import { BatchSchedulePage } from "../../features/schedule/BatchSchedulePage";
+import TicketsPage from "../../features/support/pages/TicketsPage";
+import TicketDetailsPage from "../../features/support/pages/TicketDetailsPage";
+// ✅ ADDED: Member Support Portal (public — no auth required)
+import MemberSupportPortal from "../../features/support/pages/MemberSupportPortal";
 
 // ─────────────────────────────────────────────
 // PROTECTED ROUTE WRAPPER
@@ -140,6 +144,11 @@ export const router = createBrowserRouter([
   {
     path: "/unauthorized",
     element: <UnauthorizedPage />,
+  },
+  // ✅ ADDED: Public member support portal — sits outside AuthGuard like /login
+  {
+    path: "/member-support",
+    element: <MemberSupportPortal />,
   },
   {
     // All authenticated routes nest under MainLayout
@@ -376,6 +385,24 @@ export const router = createBrowserRouter([
           </RoleGuard >
         ),
       },
+
+      // support
+      {
+       path: "/support",
+       element: (
+         <RoleGuard allowedRoles={["SUPER_ADMIN","ADMIN","CENTER_MANAGER","SALES_MANAGER","RM","FM","TRAINING_MANAGER","HR"]}>
+            <TicketsPage />
+         </RoleGuard>
+       ),
+     },
+     {
+      path: "/support/:id",
+      element: (
+        <RoleGuard allowedRoles={["SUPER_ADMIN","ADMIN","CENTER_MANAGER","SALES_MANAGER","RM","FM","TRAINING_MANAGER","HR"]}>
+           <TicketDetailsPage />
+        </RoleGuard>
+       ),
+    },
 
       // ── Settings ───────────────────────────────
       {
