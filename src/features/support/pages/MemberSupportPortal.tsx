@@ -236,7 +236,7 @@ export default function MemberSupportPortal() {
           <div className="fade-up">
             <div style={{ textAlign:"center", marginBottom:48 }}>
               <div style={{ display:"inline-flex", alignItems:"center", gap:6, background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.2)", borderRadius:20, padding:"5px 14px", fontSize:11, color:"#a5b4fc", fontWeight:600, marginBottom:20, textTransform:"uppercase", letterSpacing:"0.08em" }}>
-                🟢 Support · Mon–Sat 6AM–10PM
+                🟢 Support · Mon–Sun 6AM–10PM
               </div>
               <h1 style={{ fontSize:42, fontWeight:800, color:"#f8fafc", letterSpacing:"-0.03em", lineHeight:1.15, marginBottom:14 }}>
                 How can we<br />
@@ -298,7 +298,7 @@ export default function MemberSupportPortal() {
             <div style={{ display:"flex", gap:16, marginTop:28 }}>
               {[
                 { icon:"⚡", label:"Avg Response",   value:"< 2 hrs"         },
-                { icon:"✅", label:"Resolution Rate", value:"97%"             },
+                { icon:"✅", label:"Resolution Rate", value:"100%"             },
                 { icon:"📞", label:"Direct Call",    value:"+91 98765 43210" },
               ].map(s => (
                 <div key={s.label} style={{ flex:1, background:"rgba(15,20,35,0.5)", border:"1px solid rgba(99,102,241,0.08)", borderRadius:10, padding:"12px 14px", textAlign:"center" }}>
