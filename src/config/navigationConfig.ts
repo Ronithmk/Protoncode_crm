@@ -104,6 +104,13 @@ export const MAIN_NAV: NavItem[] = [
     icon: "Settings2",
     roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER"],
   },
+  {
+    id: "support",
+    label: "Support",
+    path: "/support",
+    icon: "MessageCircle",
+    roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "RM", "FM", "TRAINING_MANAGER"],
+  },
 ];
 
 // ─────────────────────────────────────────────
@@ -316,7 +323,15 @@ export const MODULE_SIDEBAR: ModuleSidebarMap = {
       dividerBefore: true,
     },
   ],
-
+  support: [
+    {
+      id: "tickets",
+      label: "All Tickets",
+      path: "/support",
+      icon: "MessageCircle",
+      roles: ["SUPER_ADMIN", "ADMIN", "CENTER_MANAGER", "SALES_MANAGER", "RM", "FM", "TRAINING_MANAGER"],
+    },
+   ],
   settings: [
     {
       id: "general",

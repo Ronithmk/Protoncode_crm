@@ -24,6 +24,10 @@ import {
 // Users
 import { UsersListPage, RolesPage } from "../../features/users/UsersPage";
 
+// support
+import TicketsPage from "../../features/support/pages/TicketsPage";
+
+
 // Settings
 import {
   GeneralSettings,
@@ -74,6 +78,9 @@ export const router = createBrowserRouter([
 
       // ── Reports ────────────────────────────────────────
       { path: "/reports",          element: <ReportsPage /> },
+
+      // ── Support ───────────────────────────────────────
+      { path: "/support", element: <TicketsPage /> },
      
 
       // ── Users ──────────────────────────────────────────
